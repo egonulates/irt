@@ -1,0 +1,391 @@
+---
+title: "Quick Start Guide"
+author: "Emre Gönülateş"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette: 
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Quick Start Guide}
+  %\VignetteEngine{knitr::knitr}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(irt)
+```
+
+# Basic Objects
+
+`irt` package contains many useful functions commonly used in psychometrics. 
+
+Item parameters are defined within three main objects types:
+
+* __`Item`__ object contains all of the information about a test/survey item. It
+is the building block of `Testlet` and `Itempool` objects. It mainly contains
+item parameters and item's psychometric model.  But it can also contain many
+other item attributes such as item `content`, `item_id`. User can also define
+additional attributes, for example, `key`, `enemies`, `word_count`,
+`seed_group`, etc.
+
+* __`Testlet`__ object is a set of `Item` objects. It can also have it's own
+psychometric model. User can also define additional attributes.
+
+* __`Itempool`__ object is a collection of `Item` and `Testlet` objects. 
+
+
+## `Item` 
+
+In order to create an `Item` object, the psychometric model and item parameter
+values is sufficient. Specifying an `item_id` field is required if `Item` will be
+used within an `Itempool` or `Testlet`. 
+
+### 3PL Model
+
+A three parameter logistic model item (`3PL`) requires `a`, `b` and `c` 
+parameters to be specified:
+
+```{r}
+item1 <- item(a = 1.2, b = -.8, c = .33, model = "3PL")
+item1
+```
+
+`a` is the item discrimination, `b` is the item difficulty and `c` is the
+pseudo-guessing parameter.
+
+By default, the value of scaling constant `D` is specified as `1`. But it can be
+overridden:
+
+
+```{r}
+item1 <- item(a = 1.2, b = -.8, c = .33, D = 1.7, model = "3PL")
+item1
+```
+
+`item_id` and `content` field can be specified as well:
+
+```{r}
+item1 <- item(a = 1.2, b = -.8, c = .33, D = 1.7, model = "3PL", 
+              item_id = "ITM384", content = "Quadratic Equations")
+item1
+```
+
+Additional fields can be added through `misc` field: 
+
+
+```{r}
+item1 <- item(a = 1.2, b = -.8, c = .33, D = 1.7, model = "3PL", 
+              item_id = "ITM384", content = "Quadratic Equations", 
+              misc = list(key = "A", 
+                          enemies = c("ITM664", "ITM964"), 
+                          seed_year = 2020, 
+                          target_grade = "11")
+              )
+item1
+```
+
+An item characteristic curve can be plotted using `plot` function:
+
+```{r}
+plot(item1)
+```
+
+### Rasch Model 
+
+`Rasch` model item requires `b` parameter to be specified:
+
+```{r}
+item2 <- item(b = -.8, model = "Rasch")
+item2
+```
+
+For `Rasch` model, `D` parameter cannot be specified. 
+
+### `1PL` Model 
+
+A one-parameter model item requires `b` parameter to be specified:
+
+```{r}
+item3 <- item(b = -.8, D = 1.7, model = "1PL")
+item3
+```
+
+
+
+### `2PL` Model 
+
+A two-parameter model item requires `a` and `b` parameters to be specified:
+
+```{r}
+item4 <- item(a = 1.2, b = -.8, D = 1.702, model = "2PL")
+item4
+```
+
+
+### `4PL` Model 
+
+A four-parameter model item requires `a`, `b`, `c` and `d` parameters to be
+specified:
+
+```{r}
+item5 <- item(a = 1.06, b = 1.76, c = .13, d = .98, model = "4PL", 
+              item_id = "itm-5")
+item5
+```
+
+`d` is the upper-asymptote parameter. 
+
+### Graded Response Model (`GRM`)
+
+A Graded Response model item requires `a` and `b` parameters to be specified. 
+`b` parameters is ascending vector of threshold parameters: 
+
+```{r}
+item6 <- item(a = 1.22, b = c(-1.9, -0.37, 0.82, 1.68), model = "GRM", 
+              item_id = "itm-6")
+item6
+plot(item6)
+```
+
+`D` parameter can also be specified. 
+
+### Generalized Partial Credit Model (`GPCM`) 
+
+A Generalized Partial Credit model item requires `a` and `b` parameters to be
+specified. `b` parameters is ascending vector of threshold parameters:
+
+```{r}
+item7 <- item(a = 1.22, b = c(-1.9, -0.37, 0.82, 1.68), D = 1.7, model = "GPCM", 
+              item_id = "itm-7")
+item7
+```
+
+
+### Partial Credit Model (`PCM`) 
+
+A Partial Credit model item requires `b` parameters to be
+specified. `b` parameters is ascending vector of threshold parameters:
+
+```{r}
+item8 <- item(b = c(-1.9, -0.37, 0.82, 1.68), model = "PCM")
+item8
+```
+
+
+### Generating Random Item Parameters
+
+An item with random item parameters can be generated using `generate_item` 
+function:
+
+```{r}
+generate_item("3PL")
+generate_item("2PL")
+generate_item("Rasch")
+generate_item("GRM")
+# The number of categories of polytomous items can be specified:
+generate_item("GPCM", n_categories = 5)
+```
+
+
+## `Testlet`
+
+A testlet is simply a collection of `Item` objects:
+
+```{r}
+item1 <- item(a = 1.2, b = -.8, c = .33, D = 1.7, model = "3PL", 
+              item_id = "ITM384", content = "Quadratic Equations")
+item2 <- item(a = 0.75, b = 1.8, c = .21, D = 1.7, model = "3PL", 
+              item_id = "ITM722", content = "Quadratic Equations")
+item3 <- item(a = 1.06, b = 1.76, c = .13, d = .98, model = "4PL", 
+              item_id = "itm-5")
+t1 <- testlet(c(item1, item2, item3))
+t1
+```
+
+An `testlet_id` field is required if testlet will be used in an item pool.
+
+```{r}
+t1 <- testlet(item1, item2, item3, testlet_id = "T1")
+t1
+```
+
+## `Itempool`
+
+An `Itempool` object is the most frequently used object type in `irt` package. 
+It is a collection of `Item` and `Testlet` objects. 
+
+
+```{r}
+item1 <- generate_item("3PL", item_id = "I1") 
+item2 <- generate_item("3PL", item_id = "I2") 
+item3 <- generate_item("3PL", item_id = "I3") 
+ip1 <- itempool(item1, item2, item3)
+```
+
+Item pools can be composed of items from different psychometric models and
+testlets:
+
+```{r}
+item4 <- generate_item("GRM", item_id = "I4") 
+item5 <- generate_item("3PL", item_id = "T1-I1") 
+item6 <- generate_item("3PL", item_id = "T1-I2") 
+t1 <- testlet(item5, item6, item_id = "T1")
+ip2 <- itempool(item1, item2, item3, item4, t1)
+```
+
+Most of the time item pools are generated using data frames:
+
+```{r}
+n_item <- 6 # Number of items
+ipdf <- data.frame(a = rlnorm(n_item), b = rnorm(n_item), 
+                   c = runif(n_item, 0, .3))
+ip3 <- itempool(ipdf)
+ip3
+
+# Scaling constant can be specified
+ip4 <- itempool(ipdf, D = 1.7)
+ip4
+```
+
+
+
+```{r}
+ipdf <- data.frame(
+  item_id = c("Item_1", "Item_2", "Item_3", "Item_4", "Item_5", "Item_6"), 
+  model = c("3PL", "3PL", "3PL", "GPCM", "GPCM", "GPCM"), 
+  a = c(1.0253, 1.3609, 1.6617, 1.096, 0.9654, 1.3995), 
+  b1 = c(NA, NA, NA, -1.112, -0.1709, -1.1324), 
+  b2 = c(NA, NA, NA, -0.4972, 0.2778, -0.5242), 
+  b3 = c(NA, NA, NA, -0.0077, 0.9684, NA), 
+  D = c(1.7, 1.7, 1.7, 1.7, 1.7, 1.7), 
+  b = c(0.7183, -0.4107, -1.5452, NA, NA, NA), 
+  c = c(0.0871, 0.0751, 0.0589, NA, NA, NA), 
+  content = c("Geometry", "Algebra", "Algebra", "Geometry", "Algebra", 
+              "Algebra") 
+)
+
+ip5 <- itempool(ipdf)
+```
+
+
+`Itempool` objects can also be converted to a data frame:
+
+```{r}
+as.data.frame(ip2)
+```
+
+
+
+# Basic IRT Functions
+
+## Probability
+
+Probability of correct response (for dichotomous items) and probability of 
+each category (for polytomous items) can be calculated using `prob` function:
+
+```{r}
+item1 <- generate_item("3PL")
+theta <- 0.84
+# The probability of correct and incorrect response for `item1` at theta = 0.84
+prob(item1, theta)
+
+# Multiple theta values
+prob(item1, theta = c(-1, 1))
+
+# Polytomous items:
+item2 <- generate_item(model = "GPCM")
+prob(item2, theta = 1)
+prob(item2, theta = c(-1, 0, 1))
+```
+
+Probability of correct response (or category) for each item in an item pool 
+can be calculated as:
+
+```{r}
+ip <- generate_ip(model = "3PL", n = 7)
+ip
+prob(ip, theta = 0)
+# When there are multiple theta values, a list where each element corresponds
+# to a theta value returned. 
+prob(ip, theta = c(-2, 0, 1))
+```
+
+Item characteristic curves (ICC) can be plotted:
+
+```{r}
+# Plot ICC of each item in the item pool
+plot(ip)
+
+# Plot test characteristic curve
+plot(ip, type = "tcc")
+```
+
+
+# Information
+
+Information value of an item at a given $\theta$ value can also be calculated:
+
+```{r}
+item1 <- generate_item("3PL")
+info(item1, theta = -2)
+
+# Multiple theta values
+info(item1, theta = c(-1, 1))
+
+# Polytomous items:
+item2 <- generate_item(model = "GPCM")
+info(item2, theta = 1)
+info(item2, theta = c(-1, 0, 1))
+```
+
+Information values for each item in an item pool can be calculated as:
+
+```{r}
+ip <- generate_ip(model = "3PL", n = 7)
+ip
+info(ip, theta = 0)
+info(ip, theta = c(-2, 0, 1))
+```
+
+Information functions can be plotted:
+
+```{r}
+# Plot information function of each item
+plot_info(ip)
+# Plot test information function
+plot_info(ip, tif = TRUE)
+```
+
+
+# Ability Estimation
+
+For a given set of item parameters and item responses, the ability ($\theta$)
+estimates can be calculated using `est_ability` function. 
+
+```{r}
+# Generate an item pool 
+ip <- generate_ip(model = "2PL", n = 10)
+true_theta <- rnorm(5)
+resp <- sim_resp(ip = ip, theta = true_theta, output = "matrix")
+
+# Calculate raw scores
+est_ability(resp = resp, ip = ip, method = "sum_score")
+# Estimate ability using maximum likelihood estimation:
+est_ability(resp = resp, ip = ip, method = "ml")
+# Estimate ability using EAP estimation:
+est_ability(resp = resp, ip = ip, method = "eap")
+# Estimate ability using EAP estimation with a different prior 
+# (prior mean = 0, prior standard deviation = 2):
+est_ability(resp = resp, ip = ip, method = "eap", prior_pars = c(0, 2))
+```
+
+
+
+

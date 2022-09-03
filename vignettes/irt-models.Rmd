@@ -1,0 +1,352 @@
+---
+title: "Psychometric Models in `irt` Package"
+author: "Emre Gönülateş"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette: 
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Psychometric Models in `irt` Package}
+  %\VignetteEngine{knitr::knitr}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  fig.width = 5,
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignettes covers the psychometric models that are implemented in 
+the `irt` package. 
+
+
+# Item Models
+
+| Name  | Description                                     | Parameters    |
+|-------|-------------------------------------------------|---------------|
+| Rasch | Rasch Model                                     | b             |
+| 1PL   | One-Parameter Logistic Model                    | b, D          |
+| 2PL   | Two-Parameter Logistic Model                    | a, b, D       |
+| 3PL   | Three-Parameter Logistic Model                  | a, b, c, D    |
+| 4PL   | Four-Parameter Logistic Model                   | a, b, c, d, D |
+| GRM   | Graded Response Model                           | a, b, D       |
+| PCM   | Partial Credit Model                            | b             |
+| GPCM  | Generalized Partial Credit Model                | a, b, D       |
+| GPCM2 | Reparametrized Generalized Partial Credit Model | a, b, d, D    |
+
+
+## Rasch Model
+
+For an examinee $i$ with ability $\theta_i$, the probability of correct 
+response to an item $j$ is: 
+
+$$P\left(X_{ij} = 1 | \theta_i;b_j\right) = 
+  \frac{e^{(\theta_i - b_j)}}{1 + e^{(\theta_i - b_j)}}
+$$
+
+where , $b_j$ is the item difficulty (or threshold) of item $j$.  
+
+User needs to specify only the item difficulty parameter: 
+
+```{r}
+library(irt)
+
+itm_rasch <- item(b = -1.29)
+itm_rasch
+```
+
+The probability of each response option at $\theta = -.65$ is: 
+
+```{r}
+prob(ip = itm_rasch, theta = -0.65)
+```
+
+The item characteristic curve of this item is: 
+```{r}
+plot(itm_rasch)
+```
+
+<!-- ####################################################################### -->
+
+## One-Parameter Logistic Model
+
+For an examinee $i$ with ability $\theta_i$, the probability of correct 
+response to an item $j$ is: 
+
+$$P\left(X_{ij} = 1 | \theta_i;b_j\right) = 
+  \frac{e^{D(\theta_i - b_j)}}{1 + e^{D(\theta_i - b_j)}}
+$$
+
+where , $b_j$ is the item difficulty (or threshold) of item $j$. D is the
+scaling constant (the default value is `r irt:::DEFAULT_D_SCALING`). 
+
+User needs to specify the following parameters: 
+
+```{r}
+itm_1pl <- item(b = 0.83, D = 1)
+itm_1pl
+```
+
+The probability of each response option at $\theta = .73$ is: 
+
+```{r}
+prob(ip = itm_1pl, theta = 0.73)
+```
+
+The item characteristic curve of this item is: 
+```{r}
+plot(itm_1pl)
+```
+
+<!-- ####################################################################### -->
+
+## Two-Parameter Logistic Model
+
+For an examinee $i$ with ability $\theta_i$, the probability of correct 
+response to an item $j$ is: 
+
+$$P\left(X_{ij} = 1 | \theta_i;a_j, b_j\right) = 
+  \frac{e^{Da_j(\theta_i - b_j)}}{1 + e^{Da_j(\theta_i - b_j)}}
+$$
+
+where $a_j$ is the item discrimination (or slope) of item $j$, $b_j$ is the item 
+difficulty (or threshold). D is the scaling constant (the default value is 
+`r irt:::DEFAULT_D_SCALING`). 
+
+User needs to specify all of the parameter values: 
+
+```{r}
+itm_2pl <- item(a = .94, b = -1.302, D = 1)
+itm_2pl
+```
+
+The probability of each response option at $\theta = -0.53$ is: 
+
+```{r}
+prob(ip = itm_2pl, theta = -0.53)
+```
+
+The item characteristic curve of this item is: 
+```{r}
+plot(itm_2pl)
+```
+
+<!-- ####################################################################### -->
+
+## Three-Parameter Logistic Model
+
+For an examinee $i$ with ability $\theta_i$, the probability of correct 
+response to an item $j$ is: 
+
+$$P\left(X_{ij} = 1 | \theta_i;a_j, b_j, c_j\right) = 
+  c_j + (1 - c_j)\frac{e^{Da_j(\theta_i - b_j)}}{1 + e^{Da_j(\theta_i - b_j)}}
+$$
+
+where $a_j$ is the item discrimination (or slope) of item $j$, $b_j$ is the item 
+difficulty (or threshold), and $c_j$ is the lower asymptote (or pseudo-guessing) 
+value. D is the scaling constant (the default value is 
+`r irt:::DEFAULT_D_SCALING`). 
+
+As can be seen from the equation above, the user needs to specify all of the 
+parameter values: 
+
+```{r}
+itm_3pl <- item(a = 1.51, b = 2.04, c = .16, D = 1.7)
+itm_3pl
+```
+
+The probability of each response option at $\theta = 1.5$ is: 
+
+```{r}
+prob(ip = itm_3pl, theta = 1.5)
+```
+
+The item characteristic curve of this item: 
+```{r}
+plot(itm_3pl)
+```
+
+<!-- ####################################################################### -->
+
+## Four-Parameter Logistic Model
+
+For an examinee $i$ with ability $\theta_i$, the probability of correct 
+response to an item $j$ is: 
+
+$$P\left(X_{ij} = 1 | \theta_i;a_j, b_j, c_j, d_j\right) = 
+  c_j + (d_j - c_j)\frac{e^{Da_j(\theta_i - b_j)}}{1 + e^{Da_j(\theta_i - b_j)}}
+$$
+
+where $a_j$ is the item discrimination (or slope) of item $j$, $b_j$ is the item
+difficulty (or threshold), $c_j$ is the lower asymptote (or pseudo-guessing)
+value and $d_j$ is the upper asymptote. D is the scaling constant (the default
+value is `r irt:::DEFAULT_D_SCALING`). 
+ 
+As can be seen from the equation above, the user needs to specify all of the 
+parameter values: 
+
+```{r}
+itm_4pl <- item(a = 1.2, b = -.74, c = .22, d = .99, D = 1.7)
+itm_4pl
+```
+
+The probability of each response option at $\theta = 1.2$ is: 
+
+```{r}
+prob(ip = itm_4pl, theta = 1.2)
+```
+
+The item characteristic curve of this item is: 
+```{r}
+plot(itm_4pl)
+```
+
+<!-- ####################################################################### -->
+
+## Graded Response Model (GRM)
+
+For an examinee $i$ with ability $\theta_i$, the probability of responding at 
+or above the category $k$ to an item $j$ with possible scores 
+$k = 0, 1, \ldots, m_j$: 
+
+$$P^*\left(X_{ij} = k | \theta_i;a_j, b_j\right) =
+  \frac{e^{Da_j(\theta_i - b_{jk})} }{1 + e^{Da_j(\theta_i - b_{jk})}}
+$$
+
+where $a_j$ is the item discrimination (or slope) of item $j$, $b_{jk}$ is the 
+threshold parameter. Note that the probability of responding at or above the
+lowest category is $P^*\left(X_{ij} = 0\right) = 1$. Responding at a category 
+$k$ can be calculated as:
+
+$$P(X_{ij}=k|\theta_i) = P^*(X_{ij} = k) - P^*(X_{ij} = k+1)$$
+ 
+The user needs to specify the following parameter values: 
+
+```{r}
+itm_grm <- item(a = 0.84, b = c(-1, -.2, .75, 1.78), D = 1.7, model = "GRM")
+itm_grm
+```
+
+The probability of each response option at $\theta = 1.13$ is: 
+
+```{r}
+prob(ip = itm_grm, theta = 1.13)
+```
+
+The option characteristic curves of this item is: 
+```{r}
+plot(itm_grm)
+```
+
+
+<!-- ####################################################################### -->
+
+## Generalized Partial Credit Model (GPCM)
+
+For an examinee $i$ with ability $\theta_i$, the probability of a 
+response $k$ to an item $j$ with possible scores $k = 0, 1, \ldots, m_j$: 
+
+$$P\left(X_{ij} = k | \theta_i;a_j, b_j\right) =
+  \frac{\text{exp} \left( \sum_{v = 0}^{k}Da_j(\theta_i - b_{jv}) \right) }
+  {{\sum_{h = 0}^{m_j} \text{exp} \left[ \sum_{v = 0}^{h}
+     Da_j(\theta_i - b_{jv})  \right] }}
+$$
+
+where $a_j$ is the item discrimination (or slope) of item $j$, $b_{jv}$ are the 
+step difficulty parameters. Note that $b_{jv}$ values are not necessarily 
+ordered from smallest to the largest. D is the scaling constant (the default
+value is `r irt:::DEFAULT_D_SCALING`). 
+$\sum_{v = 0}^0 Da_j(\theta_i - b_{jv}) = 0$. 
+ 
+The user needs to specify the following parameter values: 
+
+```{r}
+itm_gpcm <- item(a = 1.1, b = c(-.74, .3, .91, 2.19), D = 1.7, model = "GPCM")
+itm_gpcm
+```
+
+The probability of each response option at $\theta = -0.53$ is: 
+
+```{r}
+prob(ip = itm_gpcm, theta = -0.53)
+```
+
+The option characteristic curves of this item is: 
+```{r}
+plot(itm_gpcm)
+```
+
+<!-- ####################################################################### -->
+
+## Partial Credit Model (PCM)
+
+For an examinee $i$ with ability $\theta_i$, the probability of a  
+response $k$ to an item $j$ with possible scores $k = 0, 1, \ldots, m_j$: 
+
+$$P\left(X_{ij} = k | \theta_i;b_j\right) =
+  \frac{\text{exp} \left( \sum_{v = 0}^{k}(\theta_i - b_{jv}) \right) }
+  {{\sum_{h = 0}^{m_j} \text{exp} \left[ \sum_{v = 0}^{h}
+     (\theta_i - b_{jv})  \right] }}
+$$
+
+where $b_{jv}$ are the step difficulty parameters. 
+$\sum_{v = 0}^0 (\theta_i - b_{jv}) = 0$. 
+ 
+The user needs to specify the following parameter values: 
+
+```{r}
+itm_pcm <- item(b = c(-1.38, -.18, 1.1), model = "PCM")
+itm_pcm
+```
+
+The probability of each response option at $\theta = -1.09$ is: 
+
+```{r}
+prob(ip = itm_pcm, theta = -1.09)
+```
+
+The option characteristic curves of this item is: 
+```{r}
+plot(itm_pcm)
+```
+
+
+
+<!-- ####################################################################### -->
+
+## Re-parametrized Generalized Partial Credit Model (GPCM2)
+
+For an examinee $i$ with ability $\theta_i$, the probability of a 
+response $k$ to an item $j$ with possible scores $k = 0, 1, \ldots, m_j$: 
+
+$$P\left(X_{ij} = k | \theta_i;a_j, b_j, d_j\right) =
+  \frac{\text{exp} \left( \sum_{v = 0}^{k}Da_j(\theta_i - b_j + d_{jv}) \right) }
+  {{\sum_{h = 0}^{m_j} \text{exp} \left[ \sum_{v = 0}^{h}
+     Da_j(\theta_i - b_j + d_{jv})  \right] }}
+$$
+
+where $a_j$ is the item discrimination (or slope) of item $j$, $b_j$ is the 
+overall location parameter and $d_{jv}$ are the threshold parameters. 
+D is the scaling constant (the default value is `r irt:::DEFAULT_D_SCALING`). 
+ 
+The user needs to specify the following parameter values: 
+
+```{r}
+itm_gpcm2 <- item(a = .71, b = .37, d = c(-.18, .11, 1.29), D = 1, 
+                  model = "GPCM2")
+itm_gpcm2
+```
+
+The probability of each response option at $\theta  1.3$ is: 
+
+```{r}
+prob(ip = itm_gpcm2, theta = 1.3)
+```
+
+The option characteristic curves of this item is: 
+```{r}
+plot(itm_gpcm2)
+```

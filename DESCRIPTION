@@ -1,0 +1,75 @@
+Package: irt
+Type: Package
+Title: Item Response Theory and Computerized Adaptive Testing Functions
+Version: 0.2.6
+Authors@R: c(person(given = "Emre", 
+                    family = "Gonulates", 
+                    role = c("aut", "cre"),
+                    email = "egonulates@gmail.com",  
+                    comment = c(ORCID="0000-0002-3834-3266")))
+Maintainer: Emre Gonulates <egonulates@gmail.com>
+Description: A collection of Item Response Theory (IRT) and Computerized 
+     Adaptive Testing (CAT) functions that are used in psychometrics. 
+License: AGPL (>= 3)
+Depends:
+    methods
+LinkingTo: Rcpp
+Imports:
+    Rcpp (>= 1.0.1),
+    parallel
+NeedsCompilation: no
+RoxygenNote: 7.2.0
+Encoding: UTF-8
+Collate:
+    'RcppExports.R'
+    'ability_estimation.R'
+    'bilog.R'
+    'cat_sim.R'
+    'cat_sim_helper_functions.R'
+    'classification.R'
+    'item-class.R'
+    'item-class-methods.R'
+    'itempool-class.R'
+    'itempool-class-methods.R'
+    'dif.R'
+    'flexMIRT.R'
+    'response-class.R'
+    'generate_objects.R'
+    'info.R'
+    'ipd.R'
+    'irt.R'
+    'item_analysis.R'
+    'item_fit.R'
+    'kernel_smoothing.R'
+    'response_set-class.R'
+    'max_score.R'
+    'mean.R'
+    'misc.R'
+    'person_fit.R'
+    'plot_cat_output.R'
+    'plot_distractor_icc.R'
+    'plot_icc.R'
+    'plot_itempool.R'
+    'plot_info.R'
+    'plot_item.R'
+    'plot_ks.R'
+    'plot_resp_loglik.R'
+    'prob.R'
+    'resp_lik.R'
+    'resp_loglik.R'
+    'response-class-methods.R'
+    'response_set-class-methods.R'
+    'rsss.R'
+    'sim_resp.R'
+    'testlet-class-methods.R'
+    'var.R'
+    'zzz.R'
+Config/testthat/edition: 3
+Suggests: 
+    ggplot2,
+    markdown,
+    knitr,
+    rmarkdown, 
+    tibble, 
+    pillar
+VignetteBuilder: knitr
