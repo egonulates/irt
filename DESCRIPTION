@@ -8,8 +8,10 @@ Authors@R: c(person(given = "Emre",
                     email = "egonulates@gmail.com",  
                     comment = c(ORCID="0000-0002-3834-3266")))
 Maintainer: Emre Gonulates <egonulates@gmail.com>
+BugReports: https://github.com/egonulates/irt/issues
 Description: A collection of Item Response Theory (IRT) and Computerized 
      Adaptive Testing (CAT) functions that are used in psychometrics. 
+URL: https://github.com/egonulates/irt (devel)
 License: AGPL (>= 3)
 Depends:
     methods
@@ -20,6 +22,7 @@ Imports:
 NeedsCompilation: no
 RoxygenNote: 7.2.0
 Encoding: UTF-8
+Language: en-US
 Collate:
     'RcppExports.R'
     'ability_estimation.R'

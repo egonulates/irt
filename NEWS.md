@@ -17,6 +17,9 @@
 * Responses, items administered, administered item IDs, estimates before or 
   after the administration of an item can be extracted from the individual 
   CAT output. For details, see "?`$.cat_output`". 
+* Added `output_type` argument to `est_ability(, output_type = )` function with
+  available following output types: `"list"`, `"data.frame"`, `"tibble"`. 
+  Previoulsy, the output was only a "list".
 
 # irt 0.1.4
 

@@ -87,6 +87,19 @@
 #' @param tol The precision level of ability estimate. The final ability
 #'   estimates will be rounded to remove the precision that is smaller than the
 #'   \code{tol} value. The default value is \code{1e-06}.
+#' @param output_type A string that specifies the output type of the funciton.
+#'   The default value is \code{"list"}.
+#'   Available options are:
+#'   \describe{
+#'     \item{"list"}{Function returns a \code{list} object with elements
+#'       \code{est} and \code{se}.}
+#'     \item{"data.frame"}{Function returns a \code{data.frame} object with
+#'       columns \code{examinee_id}, \code{est} and \code{se}}
+#'     \item{"tibble"}{If the \code{tibble} package is available, the function
+#'           returns a \code{tibble} object with columns \code{examinee_id},
+#'           \code{est} and \code{se}.}
+#'   }
+#'
 #'
 #' @return \code{est} The ability estimated. If the response vector for a
 #'   subject contains all \code{NA}s, then, in order to differentiate all
@@ -143,18 +156,26 @@
 #'
 #'
 #'
-est_ability <- function(resp,
-                        ip = NULL,
-                        method = "eap",
-                        ...,
-                        prior_dist = "norm",
-                        prior_pars = c(0, 1),
-                        theta_range = c(-5, 5),
-                        number_of_quads = 41,
-                        tol = 1e-6) {
+est_ability <- function(
+    resp,
+    ip = NULL,
+    method = c("eap", "ml", "map", "bm", "owen", "sum_score"),
+    ...,
+    prior_dist = c("norm", "unif", "lnorm", "gamma", "t", "cauchy"),
+    prior_pars = c(0, 1),
+    theta_range = c(-5, 5),
+    number_of_quads = 41,
+    tol = 1e-6,
+    output_type = c("list", "data.frame", "tibble")) {
   # args <- list(...)
   method <- tolower(method)
+  method <- match.arg(method)
+
   prior_dist <- tolower(prior_dist)
+  prior_dist <- match.arg(prior_dist)
+
+  output_type <- tolower(output_type)
+  output_type <- match.arg(output_type)
   # Check item pool:
   if (!is.null(ip) && !is(ip, "Itempool")) ip <- itempool(ip)
   if (is.null(ip) && method != "sum_score") {
@@ -177,14 +198,21 @@ est_ability <- function(resp,
       resp = as.matrix(resp), ip = ip, theta_range = theta_range,
       no_of_quadrature = number_of_quads, prior_dist = prior_dist,
       prior_par = prior_pars)
+
     temp_row_names <- rownames(resp)
     if (!is.null(temp_row_names)) {
       est$est <- stats::setNames(est$est, temp_row_names)
       est$se <- stats::setNames(est$se, temp_row_names)
     }
-    est$est <- round(est$est, floor(abs(log10(tol))))
-    est$se <- round(est$se, floor(abs(log10(tol))))
-    return(est)
+    se <- est$se
+    est <- est$est
+
+    # est$est <- round(est$est, floor(abs(log10(tol))))
+    # est$se <- round(est$se, floor(abs(log10(tol))))
+    # return(est)
+
+    method <- "eap_matrix" # to prevent getting into "switch" statement below
+    resp_set <- resp
   } else {
     resp_set <- convert_to_resp_set(resp = resp, ip = ip, object_name = "resp")
   }
@@ -197,7 +225,8 @@ est_ability <- function(resp,
       # When method = "sum_score" and resp is matrix/data.frame, resp was
       # previously assigned to resp_set.
       } else resp_matrix <- resp_set
-      se <- est <- setNames(rep(NA, nrow(resp_matrix)), rownames(resp_matrix))
+      se <- est <- setNames(rep(as.numeric(NA), nrow(resp_matrix)),
+                            rownames(resp_matrix))
       est <- rowSums(resp_matrix, na.rm = TRUE)
 
     },
@@ -357,8 +386,9 @@ est_ability <- function(resp,
       est <- temp$est
       se <- temp$se
 
-    },
-    stop("This method has not been implemented yet.")
+    }
+    # ,
+    # stop("This method has not been implemented yet.")
     )
 
   # Round numbers up to tolerance
@@ -367,17 +397,26 @@ est_ability <- function(resp,
     se <- round(se, floor(abs(log10(tol))))
   }
 
+  # # Convert all NA response strings's est and se to NA
+  # all_na_rows <- apply(is.na(resp), 1, all)
+  # est[all_na_rows] <- NA
+  # se[all_na_rows] <- NA
+
   # Set examinee names
   if ((!is.atomic(resp) || is.matrix(resp)) && is(resp_set, "Response_set")) {
     est <- stats::setNames(est, resp_set$examinee_id)
     se <- stats::setNames(se, resp_set$examinee_id)
   }
+  if (output_type == "list") {
+    result <- list(est = est, se = se)
+  } else if (output_type %in% c("data.frame", "tibble")) {
+    result <- data.frame(examinee_id = NA, est = est, se = se)
+    result$examinee_id <- names(est)
+    if (output_type == "tibble" && requireNamespace("tibble")) {
+      result <- tibble::as_tibble(result)
+    }
+  }
 
-
-  # # Convert all NA response strings's est and se to NA
-  # all_na_rows <- apply(is.na(resp), 1, all)
-  # est[all_na_rows] <- NA
-  # se[all_na_rows] <- NA
-  return(list(est = est, se = se))
+  return(result)
 }
 

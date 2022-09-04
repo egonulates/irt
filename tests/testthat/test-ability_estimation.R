@@ -203,6 +203,68 @@ test_that("est_ability", {
   expect_identical(expected$est[2], c(S2 = 0))
 
 
+  # -------------------------------------------------------------------------- #
+  ## "output" argument tests
+  ip <- generate_ip(model = "3PL")
+  n_examinee <- sample(5:15, 1)
+  examinee_ids <- paste0("Exm-", sample(11:99, n_examinee))
+  true_theta <- setNames(round(rnorm(n_examinee), 3), examinee_ids)
+  resp_set <- generate_resp_set(ip = ip, theta = true_theta, prop_missing = .2)
+  resp_matrix <- as.matrix(resp_set)
+  for (m in c("eap", "ml", "owen", "sum_score", "map")) {
+    # "list"
+    observed <- est_ability(resp = resp_set, ip = ip, method = m,
+                            output_type = "list")
+    expect_type(observed, "list")
+    expect_equal(names(observed), c("est", "se"))
+    expect_equal(names(observed$est), examinee_ids)
+    expect_equal(names(observed$se), examinee_ids)
+    expect_type(observed$se, "double")
+
+    # "data.frame"
+    observed <- est_ability(resp = resp_set, ip = ip, method = m,
+                            output_type = "data.frame")
+    expect_s3_class(observed, "data.frame")
+    expect_equal(names(observed), c("examinee_id", "est", "se"))
+    expect_equal(observed$examinee_id, examinee_ids)
+    expect_type(observed$se, "double")
+
+    # "tibble"
+    observed <- est_ability(resp = resp_set, ip = ip, method = m,
+                            output_type = "tibble")
+    expect_s3_class(observed, "tbl_df")
+    expect_equal(names(observed), c("examinee_id", "est", "se"))
+    expect_equal(observed$examinee_id, examinee_ids)
+    expect_type(observed$se, "double")
+
+    # "list" - resp_matrix
+    observed <- est_ability(resp = resp_matrix, ip = ip, method = m,
+                            output_type = "list")
+    expect_type(observed, "list")
+    expect_equal(names(observed), c("est", "se"))
+    expect_equal(names(observed$est), examinee_ids)
+    expect_equal(names(observed$se), examinee_ids)
+    expect_type(observed$se, "double")
+
+    # "data.frame"
+    observed <- est_ability(resp = resp_matrix, ip = ip, method = m,
+                            output_type = "data.frame")
+    expect_s3_class(observed, "data.frame")
+    expect_equal(names(observed), c("examinee_id", "est", "se"))
+    expect_equal(observed$examinee_id, examinee_ids)
+    expect_type(observed$se, "double")
+
+    # "tibble"
+    observed <- est_ability(resp = resp_matrix, ip = ip, method = m,
+                            output_type = "tibble")
+    expect_s3_class(observed, "tbl_df")
+    expect_equal(names(observed), c("examinee_id", "est", "se"))
+    expect_equal(observed$examinee_id, examinee_ids)
+    expect_type(observed$se, "double")
+  }
+
+
+
   ### Mixture of Models ###
   # -------------------------------------------------------------------------- #
   # Function can deal with the ability estimation of mixture of item models
