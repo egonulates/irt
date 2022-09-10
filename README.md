@@ -26,6 +26,5 @@ devtools::install_github("egonulates/irt")
 
 Note that the development version can contain untested features.
 
-Please use the
-[Issues](https://cran.r-project.org/web/packages/irt/issues) tab for bug
-reports, questions, or feature requests.
+Please use the [Issues](https://github.com/egonulates/irt/issues) tab
+for bug reports, questions, or feature requests.
