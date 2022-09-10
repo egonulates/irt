@@ -1,0 +1,39 @@
+---
+output: github_document
+---
+
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, 
+  cache = FALSE,
+  comment = "# "
+)
+```
+
+# `irt`
+
+__irt__ is an R package that contains many helpful functions for psychometric
+analysis. 
+
+See the [quick start guide](https://cran.r-project.org/web/packages/irt/vignettes/irt-quick-start.html).
+
+
+## Installation
+
+The current release is available on [CRAN](https://cran.r-project.org/web/packages/irt), you can install it via: 
+
+```{r, eval=FALSE}
+install.packages("irt")
+```
+
+
+Install the latest development version from Github: 
+```{r, eval=FALSE}
+if (!requireNamespace("devtools")) install.packages("devtools")
+devtools::install_github("egonulates/irt")
+```
+Note that the development version can contain untested features. 
+
+Please use the [Issues](https://github.com/egonulates/irt/issues) tab for bug reports, questions, or feature requests. 
+
