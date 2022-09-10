@@ -27,7 +27,6 @@ The current release is available on [CRAN](https://cran.r-project.org/web/packag
 install.packages("irt")
 ```
 
-
 Install the latest development version from Github: 
 ```{r, eval=FALSE}
 if (!requireNamespace("devtools")) install.packages("devtools")
@@ -35,5 +34,5 @@ devtools::install_github("egonulates/irt")
 ```
 Note that the development version can contain untested features. 
 
-Please use the [Issues](https://github.com/egonulates/irt/issues) tab for bug reports, questions, or feature requests.  
+Please use the [Issues](https://github.com/egonulates/irt/issues) tab for bug reports, questions, or feature requests.
 
