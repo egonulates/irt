@@ -524,10 +524,6 @@ test_that("create_response_set_from_wide_format", {
 
 
   # ---------------------------------------------------------------------------#
-  # When data_format = "wide" the examinee_id's cannot be duplicated.
-
-
-  # ---------------------------------------------------------------------------#
   # Column names of x and ip ID's should match
   ip <- generate_ip(n = 10)
   resp_matrix <- matrix(sample(0:1, 140, T), nrow = 14,
@@ -535,6 +531,27 @@ test_that("create_response_set_from_wide_format", {
   expect_error(response_set(resp_matrix, ip = ip),
                paste0("Invalid 'ip'. All of the items in the response ",
                       "data should be in the item pool, ip."))
+
+  # ---------------------------------------------------------------------------#
+  # Raise error when there are no responses (i.e., all missing) in a row.
+  ip <- generate_ip()
+  n_examinee <- sample(5:20, 1)
+  examinee_ids <- sample(paste0("Ex-", 1:n_examinee))
+  resp_matrix <- as.matrix(generate_resp_set(
+    ip = ip, theta = setNames(rnorm(n_examinee), examinee_ids),
+    prop_missing = .2))
+
+  i <- sample(1:n_examinee, 1)
+  resp_matrix[i, ] <- NA
+  expect_error(response_set(x = resp_matrix, data_format = "wide"),
+               paste0("There are no valid responses in row ", i))
+
+
+  # ---------------------------------------------------------------------------#
+  # When data_format = "wide" the examinee_id's cannot be duplicated.
+
+
+  # ---------------------------------------------------------------------------#
 })
 
 

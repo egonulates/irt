@@ -132,12 +132,12 @@
          "and character for raw response data.")
   }
 
-  response_list <- tryCatch({
-    sapply(1:nrow(x), function(i)
+  response_list <- vector("list", nrow(x))
+  for (i in 1:nrow(x)) {
+    response_list[[i]] <- tryCatch({
       response(
-        score = switch(
-          score_matrix + 1, NULL,
-          unname(unlist(x[i, !is.na(x[i, , drop = TRUE])]))),
+        score = switch(score_matrix + 1, NULL,
+                       unname(unlist(x[i, !is.na(x[i, , drop = TRUE])]))),
         raw_response = switch(
           score_matrix + 1,
           unname(unlist(x[i, !is.na(x[i, , drop = TRUE])])), NULL),
@@ -147,13 +147,43 @@
                             testlet_ids[i, !is.na(x[i, , drop = TRUE])], NULL),
         examinee_id = examinee_ids[i]
         )
-      )
-    }, error = function(e) {
-      if (grepl("Either 'score' or 'raw_response' should be provided.",
-                e$message)) {
-        stop("All scores/raw_responses cannot be NA. Please check 'x'. ")
-      } else stop(e$message, call. = FALSE)
-  })
+      }, error = function(e) {
+        if (grepl("Either 'score' or 'raw_response' should be provided.",
+                  e$message)) {
+          stop(paste0("All scores/raw_responses cannot be NA. Please check ",
+                      "row ", i, " of 'x'."))
+        } else if (grepl("Score should be a valid atomic vector", e$message)) {
+          stop(paste0("Invalid 'x'. There are no valid responses in row ", i,
+                      "."))
+        } else {
+          stop(e$message, call. = FALSE)
+        }
+      })
+  }
+
+  # response_list <- tryCatch({
+  #   sapply(1:nrow(x), function(i)
+  #     response(
+  #       score = switch(
+  #         score_matrix + 1, NULL,
+  #         unname(unlist(x[i, !is.na(x[i, , drop = TRUE])]))),
+  #       raw_response = switch(
+  #         score_matrix + 1,
+  #         unname(unlist(x[i, !is.na(x[i, , drop = TRUE])])), NULL),
+  #       item_id = item_ids[!is.na(x[i, ])],
+  #       testlet_id = switch((is.null(testlet_ids) ||
+  #                              all(is.na(testlet_ids[i, ]))) + 1,
+  #                           testlet_ids[i, !is.na(x[i, , drop = TRUE])], NULL),
+  #       examinee_id = examinee_ids[i]
+  #       )
+  #     )
+  #   }, error = function(e) {
+  #     if (grepl("Either 'score' or 'raw_response' should be provided.",
+  #               e$message)) {
+  #       stop("All scores/raw_responses cannot be NA. Please check 'x'. ")
+  #     } else stop(e$message, call. = FALSE)
+  # })
+
 
   # Setup 'testlet_id' slot
   if (!is.null(testlet_ids)) {
