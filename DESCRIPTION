@@ -1,7 +1,7 @@
 Package: irt
 Type: Package
 Title: Item Response Theory and Computerized Adaptive Testing Functions
-Version: 0.2.6
+Version: 0.2.6-2
 Authors@R: c(person(given = "Emre", 
                     family = "Gonulates", 
                     role = c("aut", "cre"),
@@ -20,7 +20,7 @@ Imports:
     Rcpp (>= 1.0.1),
     parallel
 NeedsCompilation: no
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
 Encoding: UTF-8
 Language: en-US
 Collate:

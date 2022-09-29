@@ -72,7 +72,7 @@ double biserial_cpp(Rcpp::NumericVector score,
     criterion = avg_rank(criterion);
     type = "brogden";
   }
-  if ((type == "clemans-lord") | (type == "brogden")) {
+  if ((type == "clemans-lord") || (type == "brogden")) {
     // Calculate deviation
     dev = criterion - mean(criterion);
     NumericVector sorted_score = clone(score);

@@ -63,7 +63,7 @@ Rcpp::List est_ability_map_single_examinee_cpp(
     d2_ll = d2_ll - 1 / pow(prior_sd, 2);
 
     theta_est = theta_est - (d1_ll / d2_ll);
-    diff = abs(d1_ll - d1_ll_pre);
+    diff = std::fabs(d1_ll - d1_ll_pre);
     d1_ll_pre = d1_ll;
   }
   if (theta_est < theta_range[0]) theta_est = theta_range[0];
@@ -132,7 +132,7 @@ Rcpp::List est_ability_map_response_cpp(
     d2_ll = d2_ll - 1 / pow(prior_sd, 2);
 
     theta_est = theta_est - (d1_ll / d2_ll);
-    diff = abs(d1_ll - d1_ll_pre);
+    diff = std::fabs(d1_ll - d1_ll_pre);
 
     // Rcout << "d1 = " << d1_ll << "  -  d2 = " << d2_ll <<
     //   " - theta_est = " << theta_est << "  -  diff = " << diff << std::endl;
@@ -198,9 +198,9 @@ Rcpp::List est_ability_map_response_set_cpp(
   Rcpp::List output, temp_output;
   for (int i = 0; i < num_of_resp; i++) {
     temp_resp = as<Rcpp::S4>(resp_list[i]);
-	temp_output = est_ability_map_response_cpp(temp_resp, ip, prior_dist,
-	  prior_par, theta_range, initial_theta, tol = tol);
-	est[i] = temp_output["est"];
+  	temp_output = est_ability_map_response_cpp(temp_resp, ip, prior_dist,
+  	  prior_par, theta_range, initial_theta, tol);
+  	est[i] = temp_output["est"];
     se[i] = temp_output["se"];
   }
   // Estimate standard error

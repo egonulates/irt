@@ -95,7 +95,7 @@ Rcpp::NumericVector find_icc_intersect_cpp(
       f = prob_4pm_bare_cpp(t0, item_1, 0) - prob_4pm_bare_cpp(t0, item_2, 0);
       df = prob_4pm_bare_cpp(t0, item_1, 1) - prob_4pm_bare_cpp(t0, item_2, 1);
       t1 = t0 - (f/df);
-      diff = abs(t0 - t1);
+      diff = std::fabs(t0 - t1);
     }
     result[i] = t1;
   }
@@ -138,7 +138,7 @@ double area_between_icc_exact_cpp(
   //   result = b2 - b1;
   //   if (signed_area) {
   //     return result;
-  //   } else return abs(result);
+  //   } else return std::fabs(result);
   // }
 
   double a1 = 1, a2 = 1, D1 = 1, D2 = 1, c1 = 0, c2 = 0;
@@ -166,14 +166,14 @@ double area_between_icc_exact_cpp(
     result = (1 - c1) * (b2 - b1);
     if (signed_area) {
       return result;
-    } else return abs(result);
+    } else return std::fabs(result);
   }
 
   if (c1 == c2) {
     if (signed_area) {
       return (1 - c1) * (b2 - b1);
     } else {
-      return (1 - c1) * abs( ((2 * (a2 - a1)) / (D1 * a1 * a2)) *
+      return (1 - c1) * std::fabs( ((2 * (a2 - a1)) / (D1 * a1 * a2)) *
               log(1 + exp((D1 * a1 * a2 * (b2 - b1)) / (a2 - a1))) - (b2 - b1));
     }
   } else {

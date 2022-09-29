@@ -1195,7 +1195,7 @@ flexmirt_read_gof <- function(target_dir = getwd(),
 #'
 #' @description \code{est_flexmirt} runs flexMIRT in batch mode. This function
 #'   requires flexMIRT program already installed on the Windows machine.
-#'   Visit \url{https://vpgcentral.com/software/flexmirt} for more details
+#'   Visit \url{https://vpgcentral.com/software/flexmirt/} for more details
 #'   about the software. Even though flexMIRT can run various models, only a
 #'   selected set of unidimentional models can be fitted using
 #'   \code{est_flexmirt} function.

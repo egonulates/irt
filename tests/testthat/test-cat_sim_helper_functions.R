@@ -403,6 +403,22 @@ test_that("get_cat_response_data", {
                    observed[j, co[[j]]$est_history[[i]]$item@item_id])
 
   # ---------------------------------- #
+  # When using `get_cat_response_data( , output = "matrix")`, the row names of
+  # the matrix should be the same as examinee_id's of the students.
+  n <- 40
+  ip <- generate_ip(n = n)
+  cd <- create_cat_design(ip = ip, next_item_rule = 'mfi',
+                          termination_rule = 'max_item',
+                          termination_par = list(max_item = 10))
+  n_examinee <- sample(10:20, 1)
+  examinee_ids <- paste0("Stu-", sample(1:n_examinee))
+  true_theta <- setNames(rnorm(n_examinee), examinee_ids)
+  cat_data <- cat_sim(true_ability = true_theta, cd = cd)
+  output <- get_cat_response_data(cat_sim_output = cat_data, cd = cd,
+                                  output_type = "matrix")
+  expect_identical(rownames(output), examinee_ids)
+
+  # ---------------------------------- #
   # Function only accepts certain output types:
   expect_error(get_cat_response_data(cat_sim_output = co, output_type = "xyz"))
 

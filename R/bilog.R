@@ -731,7 +731,7 @@ check_bilog_convergence <- function(par_file, ph2_file, ph3_file) {
 #'
 #' @param t text
 #' @param width total width of the line
-#' @param whether to add 'tab' string to the beginning of each text, usual
+#' @param tab whether to add 'tab' string to the beginning of each text, usual
 #'        'tab = "    "'.
 #' @param skip_tab do not put tab to these lines
 #'
@@ -1066,6 +1066,7 @@ wrap_text <- function(t, width = 80, tab = NULL, skip_tab = 0) {
 #' plot(true_ip$b, bilog_calib$ip$b, xlab = "True 'b'", ylab = "Estimated 'b'")
 #' abline(a = 0, b = 1, col = "red", lty = 2)
 #'
+#' # Note that Bilog-MG centers the ability at mean 0.
 #' mean(bilog_calib$score$ability)
 #'
 #' # Quadrature points and posterior weights:
