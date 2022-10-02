@@ -346,8 +346,7 @@ Rcpp::NumericMatrix info_itempool_cpp(
   }
   // // Consider Testlets etc.
   // // Set the column names to the item ids
-  // if (!tif)
-  //   colnames(output) = (as<Rcpp::List>(ip.slot("item_list"))).names();
+  colnames(output) = get_ids_itempool_cpp(ip);
 
   return output;
 }

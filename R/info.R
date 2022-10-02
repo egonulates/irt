@@ -40,7 +40,7 @@
 #'
 setGeneric("info", function(ip, theta, tif = FALSE, observed = FALSE,
                             resp = NULL)
-  {standardGeneric ("info")})
+  {standardGeneric("info")})
 
 
 ###############################################################################@
@@ -274,12 +274,12 @@ setMethod(
   }
   if (test) {
 	if (tif) {
-	  return(matrix(info_itempool_tif_cpp(theta = theta, ip = ip, 
-	                                      observed = observed, 
-	                                      resp = resp), ncol = 1))
+	  return(matrix(info_itempool_tif_cpp(theta = theta, ip = ip,
+	                                      observed = observed, resp = resp),
+	                ncol = 1, dimnames = list(NULL, "TIF")))
 	} else {
-	  return(info_itempool_cpp(theta = theta, ip = ip,
-                               observed = observed, resp = resp)) 
+	  return(info_itempool_cpp(theta = theta, ip = ip, observed = observed,
+	                           resp = resp))
 	}
   } else stop("This model is not implemented in 'info()' function.")
 }
