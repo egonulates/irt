@@ -1,5 +1,5 @@
 
-#' Runs a piece code with a given seed
+#' Run a piece of code with a given seed
 #'
 #' @details
 #' This function runs the code in isolation and resumes to the regular seed

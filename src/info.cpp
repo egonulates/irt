@@ -166,7 +166,19 @@ double info_item_bare_cpp(double theta, Rcpp::S4 item, bool observed,
 //##############################################################################
 //########################### info_testlet_bare_cpp ############################
 //##############################################################################
-
+//' This function calculates the information of a single testlet for single
+//' theta. It returns the total information of all items in the testlet. 
+//'  
+//' @param theta A numeric value at which the information will be calculated. 
+//' @param testlet A Testlet object.  
+//' @param observed Boolean. If "TRUE", observed information will be calculated  
+//' @param resp If 'resp' is not NULL, then it will remove the items' with NA 
+//'   from the information calculation.
+//'  
+//' @return A numeric value for the information of the testlet at the "theta"
+//'   value.
+//' 
+//' @noRd
 // [[Rcpp::export]]
 double info_testlet_bare_cpp(
   double theta, Rcpp::S4 testlet, bool observed,
@@ -175,20 +187,22 @@ double info_testlet_bare_cpp(
   // theta. It returns the total information of all items in the testlet.
   Rcpp::List item_list = as<List>(testlet.slot("item_list"));
   int num_of_items = item_list.size();
-  S4 item;
+  Rcpp::S4 item;
   double output = 0;
   bool return_na = !Rf_isNull(resp);
   // resp is also used to calculate whether to include an item in information
   // calculation. It is not just for 'observed' information.
   if (return_na) {
     // NumericVector resp_i = as<NumericVector>(resp);
-    if (as<NumericVector>(resp).size() != num_of_items)
-      throw std::range_error("Inadmissible 'resp' value. The length of the "
-             "'resp' and number of items in the testlet should be the same.");
+    if (as<Rcpp::NumericVector>(resp).size() != num_of_items)
+      
+      stop("Inadmissible 'resp' value. The length of the " 
+           "'resp' and number of items in the testlet should be the same.");
   }
+  
   for (int i = 0; i < num_of_items; i++) {
     item = as<Rcpp::S4>(item_list(i));
-    if (Rf_isNull(resp)  || !NumericVector::is_na(as<NumericVector>(resp)[i])) {
+    if (Rf_isNull(resp)  || !Rcpp::NumericVector::is_na(as<Rcpp::NumericVector>(resp)[i])) {
       output = output + info_item_bare_cpp(theta, item, false, 0);
       return_na = false;
     }
