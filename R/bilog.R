@@ -656,18 +656,29 @@ bilog_read_scores <- function(score_file, x, examinee_id_var = NULL,
   text <- readLines(score_file)
   # Remove first two lines which does not contain any information
   text <- text[-c(1:2)]
-  # Get the width of the first line that contains group number and item_id
-  # widths <- c(3, nchar(text[1])-2, 6, 11, 3, 5, 10, 12, 12, 11, 10)
-  n <- 1:(length(text)/2)
-  # text <- paste(text[2*n-1], text[2*n])
-  text <- text[2*n]
 
-  scores <- utils::read.fwf(
-    textConnection(text),
-    widths = c(6, 11, 3, 5, 10, 12, 12, 11, 10),
-    col.names = c("weight", "test", "tried", "right", "percent",
-                  "ability", "se", "prob", "unknown1")
-                            )
+  if (nrow(x) == length(text)) {
+    scores <- utils::read.delim(textConnection(text), sep = "|", header = FALSE)
+    scores <- utils::read.fwf(
+      textConnection(scores[, 2]),
+      widths = c(6 + 1, 11, 3, 5, 10, 12, 12, 11, 10),
+      col.names = c("weight", "test", "tried", "right", "percent",
+                    "ability", "se", "prob", "unknown1")
+      )
+  } else if (nrow(x) == (length(text) / 2)) {
+    # Get the width of the first line that contains group number and item_id
+    # widths <- c(3, nchar(text[1])-2, 6, 11, 3, 5, 10, 12, 12, 11, 10)
+    n <- 1:(length(text)/2)
+    # text <- paste(text[2*n-1], text[2*n])
+    text <- text[2*n]
+
+    scores <- utils::read.fwf(
+      textConnection(text),
+      widths = c(6, 11, 3, 5, 10, 12, 12, 11, 10),
+      col.names = c("weight", "test", "tried", "right", "percent",
+                    "ability", "se", "prob", "unknown1")
+                              )
+  }
   scores <- scores[, c("tried", "right", "ability", "se", "prob")]
   # Add group info
   if (!is.null(group_var) && group_var %in% names(x)) {

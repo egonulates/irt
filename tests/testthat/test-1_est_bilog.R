@@ -784,6 +784,98 @@ test_that("bilog_create_group_info", {
 
 ############################################################################@###
 ############################################################################@###
+################### wrap_text ##################################################
+############################################################################@###
+############################################################################@###
+
+test_that("wrap_text", {
+
+  # -------------------------------------------------------------------------- #
+  # tab is NULL, no tab prefix
+  text <- "abc"
+  expect_equal(wrap_text(text), text)
+  # Check 'tab' argument
+  tab <- "   "
+  expect_equal(wrap_text(text, tab = tab), paste0(tab, text))
+
+  # Check 'width' argument
+
+
+  paste0(rep("123.4", 20), collapse = ", ")
+  nchar(paste0("SLOPE = (", paste0(rep("1.1", 17), collapse = ","), "),"))
+
+})
+
+
+############################################################################@###
+############################################################################@###
+################### bilog_read_scores ##########################################
+############################################################################@###
+############################################################################@###
+
+test_that("bilog_read_scores", {
+
+  # -------------------------------------------------------------------------- #
+  # 2PL analysis with two lines of scores
+  test_dir <- test_path("data_for_tests", "Bilog", "2021-04-18 2PL")
+  score_file <- file.path(test_dir, "SIM_2PL_250-1.SCO")
+  data_fn <- file.path(test_dir, "test_data.RDS")
+  if (dir.exists(test_dir) && file.exists(score_file) && file.exists(data_fn)) {
+    x <- readRDS(data_fn)
+    # saveRDS(as.data.frame(x), file.path(test_dir, "test_data.RDS"))
+    scores <- bilog_read_scores(score_file = score_file, x = x,
+                                examinee_id_var = "examinee_id",
+                                group_var = NULL)
+    expect_identical(scores$examinee_id, x$examinee_id)
+    expect_identical(scores$right, as.integer(rowSums(x[, -1])))
+    expect_identical(scores$tried, rep(50L, 250))
+    expect_identical(scores$ability[1:5],
+                     c(-1.431269, 0.977889, 0.594281, 1.872952, 3.084368))
+
+  }
+
+  # -------------------------------------------------------------------------- #
+  # 3PL analysis with two lines of scores
+  test_dir <- test_path("data_for_tests", "Bilog", "2021-04-18 3PL")
+  score_file <- file.path(test_dir, "SIM_3PL_250-1.SCO")
+  data_fn <- file.path(test_dir, "test_data.RDS")
+  if (dir.exists(test_dir) && file.exists(score_file) && file.exists(data_fn)) {
+    x <- readRDS(data_fn)
+    # saveRDS(as.data.frame(x), file.path(test_dir, "test_data.RDS"))
+    scores <- bilog_read_scores(score_file = score_file, x = x,
+                                examinee_id_var = "examinee_id",
+                                group_var = NULL)
+    expect_identical(scores$examinee_id, x$examinee_id)
+    expect_identical(scores$right, as.integer(rowSums(x[, -1])))
+    expect_identical(scores$tried, rep(50L, 250))
+    expect_identical(scores$ability[1:5],
+                     c(-1.598929, 1.001463, 0.576924, 1.508691, 2.503783))
+
+  }
+
+  # -------------------------------------------------------------------------- #
+  # 1PL analysis with one line of scores
+  test_dir <- test_path("data_for_tests", "Bilog", "2022-10-24 1PL")
+  data_fn <- file.path(test_dir, "test_data.RDS")
+  score_file <- file.path(test_dir, "FORM_A_1PL_N250_REP006.SCO")
+  if (dir.exists(test_dir) && file.exists(score_file) && file.exists(data_fn)) {
+    x <- readRDS(data_fn)
+    scores <- bilog_read_scores(score_file = score_file, x = x,
+                                examinee_id_var = "examinee_id",
+                                group_var = NULL)
+    expect_identical(scores$examinee_id, x$examinee_id)
+    expect_identical(scores$right, as.integer(rowSums(x[, -1])))
+    expect_identical(scores$tried, rep(50L, 250))
+    expect_identical(scores$ability[1:5],
+                     c(-1.199542, -1.085691, -1.199542, -0.971757, -1.313617))
+    examinee_id_var <- "examinee_id"
+  }
+})
+
+
+
+############################################################################@###
+############################################################################@###
 ################### bilog_create_datafile ##################################@###
 ############################################################################@###
 ############################################################################@###
