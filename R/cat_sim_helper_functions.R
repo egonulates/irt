@@ -266,6 +266,14 @@ c.cat_design <- function(x, ...) {
 #'            \item{bias}{The difference between true ability and ability
 #'              estimate}
 #'            \item{mse}{Mean squared error}
+#'            \item{mean_qip}{Mean of Quality of Item Pool Index.
+#'                    See \code{qip_index()} function for details.}
+#'            \item{median_qip}{Median of Quality of Item Pool Index.
+#'                    See \code{qip_index()} function for details.}
+#'            \item{min_qip}{Minimum value of Quality of Item Pool Index.
+#'                    See \code{qip_index()} function for details.}
+#'            \item{max_qip}{Maximum value of Quality of Item Pool Index.
+#'                    See \code{qip_index()} function for details.}
 #'          }
 #' @return This function returns a summary data frame of adaptive tests. Each
 #' row will represent a different adaptive test.
@@ -286,6 +294,12 @@ c.cat_design <- function(x, ...) {
 #'                         termination_par = list(max_item = 10))
 #' cat_data <- cat_sim(true_ability = rnorm(5), cd = cd)
 #' summary(cat_data)
+#'
+#' # Get only selected columns
+#' summary(cat_data, cols = c("examinee_id", "true_ability", "est_ability",
+#'                            "bias"))
+#' summary(cat_data, cols = c("examinee_id", "true_ability", "est_ability",
+#'                            "mean_qip", "median_qip", "min_qip"))
 summary.cat_output <- function(
   object, ...,
   cols = c("examinee_id", "true_ability", "est_ability", "se", "test_length")) {
@@ -302,10 +316,11 @@ summary.cat_output <- function(
   #   stop("All of the elements of 'cat_output' should be 'cat_output' class.")
   if (length(cols) < 1) stop("There should be at least one column.")
   if (!all(cols %in% c("examinee_id", "true_ability", "est_ability", "se",
-                       "test_length", "bias", "mse")))
+                       "test_length", "bias", "mse",
+                       "mean_qip", "median_qip", "min_qip", "max_qip")))
     stop("Inadmissable column. 'cols' should be composed of one of the
          following: 'true_ability', 'est_ability', 'se', 'test_length', 'bias',
-         'mse'.")
+         'mse', 'mean_qip', 'median_qip', 'min_qip', 'max_qip'.")
   cat_summary <- data.frame(matrix(vector(), nrows, ncols,
                                    dimnames = list(c(), cols)),
                             stringsAsFactors = FALSE)
@@ -368,6 +383,22 @@ summary.cat_output <- function(
       },
       "mse" = {
         cat_summary$mse <- (get_est_ability() - get_true_ability())^2
+        },
+      "mean_qip" = {
+        cat_summary$mean_qip <- qip_index(cat_sim_output = object,
+                                          summary_func = "mean")
+        },
+      "median_qip" = {
+        cat_summary$median_qip <- qip_index(cat_sim_output = object,
+                                          summary_func = "median")
+        },
+      "min_qip" = {
+        cat_summary$min_qip <- qip_index(cat_sim_output = object,
+                                          summary_func = "min")
+        },
+      "max_qip" = {
+        cat_summary$max_qip <- qip_index(cat_sim_output = object,
+                                          summary_func = "max")
         }
     )
   }
@@ -771,7 +802,7 @@ get_cat_response_data_single <- function(cat_sim_output) {
 #' @description This function extracts the response data from a single
 #' \code{cat_output} object or a list of \code{cat_output} objects and returns
 #' a \code{Response_set} object that contains the administered items of each
-#' simulee or a matrix or resonses.
+#' simulee or a matrix or responses.
 #'
 #' If \code{cd}, cat design, object is given, then the item pool in the
 #' \code{cd} will be used.
@@ -1191,6 +1222,143 @@ score_info <- function(true_theta, est_theta, bins = NULL) {
     }
   }
   return(s_info)
+}
+
+
+###############################################################################@
+############################# qip_index ########################################
+###############################################################################@
+#' Calculate Quality of Item Pool Index
+#'
+#' @description The QIP Index can take values between 0 and 1 and indicates an
+#'   item pool’s level of efficiency. A value of 1 signifies an optimum item
+#'   pool for that examinee group. If one adds redundant items to an item pool
+#'   that cannot be used by the CAT algorithm, the QIP Index will not increase
+#'   or will increase minimally. In this sense, the QIP Index is an indicator of
+#'   the item pools’ deficiency, instead of redundancy. However, if an exposure
+#'   control mechanism is within test specifications, the QIP index can measure
+#'   whether the redundancy in the item pool supports the exposure control
+#'   method. See Gonulates (2019) for details.
+#'
+#'   Note that this function will best work with Rasch or 1PL models. It
+#'   will not work with polytomous items.
+#'
+#' @param cat_sim_output This is a list object containing elements that are
+#'   \code{cat_output} class.
+#' @param summary_func A string representing the function that will be applied
+#'   to individual QIP values for a simulee. The default is \code{NULL}, where
+#'   all QIP values of each administered item of a simulee will be returned.
+#'   Other possible values are: \code{"mean"}, \code{"median"}, \code{"min"},
+#'   \code{"max"}. See examples for demonstrations.
+#' @param ... Additional arguments that will be passed to the
+#'   \code{summary_func}. For example, if \code{summary_func = "quantile"},
+#'   probability of the 25th quantile can be specified using the argument
+#'   \code{prob = .25}. See examples for demonstrations.
+#'
+#'   Since \code{...} will be passed to \code{sapply} function,
+#'   \code{simplify = FALSE} can be passed to function to get results as list
+#'   elements.
+#'
+#' @return A vector or matrix of QIP values or the summary statistics of QIP
+#'   values.
+#'
+#' @author Emre Gonulates
+#'
+#' @export
+#'
+#' @references
+#' Gönülateş, E. (2019). Quality of Item Pool (QIP) Index: A Novel Approach to
+#' Evaluating CAT Item Pool Adequacy. Educational and Psychological Measurement,
+#' 79(6), 1133–1155. \url{https://doi.org/10.1177/0013164419842215/}
+#'
+#' @examples
+#'
+#' cd <- create_cat_design(ip = generate_ip(n = 30), next_item_rule = 'mfi',
+#'                         termination_rule = 'max_item',
+#'                         termination_par = list(max_item = 10))
+#' cat_output <- cat_sim(true_ability = rnorm(10), cd = cd)
+#'
+#' qip_index(cat_output)
+#'
+#' # Return result as list elements
+#' qip_index(cat_output, simplify = FALSE)
+#'
+#' # Summarize QIP values:
+#' qip_index(cat_output, summary_func = "mean")
+#' qip_index(cat_output, summary_func = "median")
+#' qip_index(cat_output, summary_func = "min")
+#' qip_index(cat_output, summary_func = "max")
+#' qip_index(cat_output, summary_func = "quantile", prob = .25)
+#' qip_index(cat_output, summary_func = "quantile", prob = c(.25, .5, .75))
+#'
+#' qip_index(cat_output, summary_func = "quantile", prob = c(.25, .5, .75),
+#'           simplify = FALSE)
+#'
+#'
+#'
+qip_index <- function(cat_sim_output, summary_func = NULL, ...) {
+  # Check whether it is one or multiple CAT outputs
+  if (is(cat_sim_output, "cat_output")) { # There is a single cat_output element
+    cat_sim_output <- list(cat_sim_output)
+  # if it is not a list of cat_output
+  } else if (!is.list(cat_sim_output) ||
+             !all(sapply(cat_sim_output, is, "cat_output")))
+    stop("All of the elements of 'cat_output' should be 'cat_output' class.")
+  result <- sapply(cat_sim_output, qip_index_single,
+                   summary_func = summary_func, ...)
+  if (inherits(result, "matrix")) result <- t(result)
+  return(result)
+}
+
+
+#' QIP index for one 'cat_output' object
+#'
+#'
+#' @noRd
+#'
+#' @examples
+#'
+#' cd <- create_cat_design(ip = generate_ip(n = 30), next_item_rule = 'mfi',
+#'                         termination_rule = 'max_item',
+#'                         termination_par = list(max_item = 10))
+#' cat_output <- cat_sim(true_ability = rnorm(1), cd = cd)
+#'
+#' qip_index_single(cat_output)
+#' qip_index_single(cat_output, summary_func = "mean")
+#' qip_index_single(cat_output, summary_func = "median")
+#' qip_index_single(cat_output, summary_func = "min")
+#' qip_index_single(cat_output, summary_func = "max")
+#' qip_index_single(cat_output, summary_func = "quantile", prob = .25)
+#'
+qip_index_single <- function(cat_sim_output, summary_func = NULL, ...) {
+  if (!inherits(cat_sim_output, "cat_output")) {
+    stop("Invalid 'cat_sim_output' argument. The class of 'cat_output' ",
+         "argument should be 'cat_output'.")
+  }
+  # In case there are any Testlets, only pull items. Then convert them to 1PL
+  # since the
+  ip_list <- lapply(cat_sim_output$est_history,
+                    function(x) convert_model(x$item, "1PL"))
+  # Maximum possible information for each item
+  max_info <- sapply(ip_list, function(x) info(ip = x, theta = x$b))
+  # Information before the administration of the item
+  est_before <- sapply(cat_sim_output$est_history, `[[`, "est_before")
+  info_before <- sapply(1:length(ip_list), function(i) info(ip = ip_list[[i]],
+                                                            theta = est_before[i]))
+  qip <- info_before/max_info
+
+  if (is.null(summary_func)) {
+    # return(setNames(qip, sapply(ip_list, "slot", name = "item_id")))
+    return(setNames(qip, paste0(1:length(qip))))
+  } else {
+    result <- do.call(summary_func, list(qip, ...))
+    # # Add examinee_id if exists
+    # if (length(result) == 1 && !is.null(cat_sim_output$examinee_id))
+    #   result <- setNames(result, cat_sim_output$examinee_id)
+    # Add examinee_id if exists
+    if (length(result) == 1) result <- unname(result)
+    return(result)
+  }
 }
 
 

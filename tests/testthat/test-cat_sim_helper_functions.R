@@ -82,6 +82,7 @@ test_that("summary.cat_output", {
   cd = create_cat_design(ip = ip, next_item_rule = "mfi",
                        termination_rule = "max_item",
                        termination_par = list(max_item = n))
+  # --------------------------------- #
   # CAT summary works with single CAT output.
   theta1 <- rnorm(1)
   t1 <- cat_sim(true_ability = theta1, cd = cd)
@@ -89,6 +90,7 @@ test_that("summary.cat_output", {
   expect_true(is.data.frame(co))
   expect_equal(co$true_ability, theta1)
 
+  # --------------------------------- #
   # CAT summary works with multiple CAT output.
   theta2 <- rnorm(1)
   t2 <- cat_sim(true_ability = theta2, cd = cd)
@@ -96,8 +98,22 @@ test_that("summary.cat_output", {
   expect_true(is.data.frame(co))
   expect_equal(co$true_ability, c(theta1, theta2))
 
+  # --------------------------------- #
   # Error raised when inadmissible column name entered.
   expect_error(summary(t1, cols = c("true_theta", "somexyx")))
+
+  # --------------------------------- #
+  # QIP works
+  qip <- qip_index(t1, summary_func = NULL)
+  qip_mean <- qip_index(t1, summary_func = "mean")
+  qip_median <- qip_index(t1, summary_func = "median")
+  qip_min <- qip_index(t1, summary_func = "min")
+  qip_max <- qip_index(t1, summary_func = "max")
+  co <- summary(t1, cols = c("mean_qip", "median_qip", "min_qip", "max_qip"))
+  expect_equal(co$mean_qip, qip_mean)
+  expect_equal(co$median_qip, qip_median)
+  expect_equal(co$min_qip, qip_min)
+  expect_equal(co$max_qip, qip_max)
 
   # -------------------------------------------------------------------------- #
   # Test multiple theta
@@ -121,6 +137,20 @@ test_that("summary.cat_output", {
   expect_identical(e$true_ability, unname(true_theta))
   expect_true(all(e$test_length == n))
   expect_identical(e$bias, e$est_ability - e$true_ability)
+
+  # --------------------------------- #
+  # QIP works
+  qip <- qip_index(t1, summary_func = NULL)
+  qip_mean <- qip_index(t1, summary_func = "mean")
+  qip_median <- qip_index(t1, summary_func = "median")
+  qip_min <- qip_index(t1, summary_func = "min")
+  qip_max <- qip_index(t1, summary_func = "max")
+  co <- summary(t1, cols = c("mean_qip", "median_qip", "min_qip", "max_qip"))
+  expect_equal(co$mean_qip, unname(qip_mean))
+  expect_equal(co$median_qip, unname(qip_median))
+  expect_equal(co$min_qip, unname(qip_min))
+  expect_equal(co$max_qip, unname(qip_max))
+
 })
 
 
@@ -577,3 +607,78 @@ test_that("score_info", {
   observed <- observed[-c(1, nrow(observed)), ]
   expect_equal(observed$score_info, expected$sinfo, tolerance = 1e-8)
 })
+
+
+
+
+
+
+###############################################################################@
+############################# qip_index ########################################
+###############################################################################@
+
+test_that("qip_index", {
+
+  # -------------------------------------------------------------------------- #
+  # Replicate QIP calculations for Table 1 of Gonulates (2019)
+  test_data <- data.frame(
+    est_before = c(0, 1.418, 2.312, 1.839, 2.198, 1.703, 1.834, 1.931, 2.001,
+                   2.047, 2.086, 2.118, 2.145, 2.168, 2.185),
+    b = c(0.001, 1.339, 2.226, 1.632, 1.511, 1.069, 1.047, 0.947, 0.755,
+          0.707, 0.63, 0.585, 0.5, 0.348, 0.248),
+    resp = c(1L, 1L, 0L, 1L, 0L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 0L),
+    est_after = c(1.418, 2.312, 1.839, 2.198, 1.703, 1.834, 1.931, 2.001,
+                  2.047, 2.086, 2.118, 2.145, 2.168, 2.185, 1.865),
+    info = c(0.722, 0.719, 0.719, 0.701, 0.523, 0.547, 0.476, 0.384, 0.277,
+             0.244, 0.207, 0.185, 0.157, 0.12, 0.1),
+    info_max = c(0.722, 0.722, 0.722, 0.722, 0.722, 0.722, 0.722, 0.722,
+                 0.722, 0.722, 0.722, 0.722, 0.722, 0.722, 0.722),
+    qip_k = c(1, 0.995, 0.995, 0.97, 0.724, 0.758, 0.659, 0.532, 0.383,
+              0.337, 0.286, 0.256, 0.217, 0.166, 0.138),
+    qip = c(1, 0.998, 0.997, 0.99, 0.937, 0.907, 0.871, 0.829, 0.779,
+            0.735, 0.694, 0.658, 0.624, 0.591, 0.561))
+
+  ip <- itempool(b = test_data$b, D = 1.7)
+  n_item <- length(ip)
+  cd <- create_cat_design(ip = ip,
+                          next_item_rule = "fixed",
+                          termination_rule = 'max_item',
+                          termination_par = list(max_item = n_item))
+
+  cat_data <- cat_sim(true_ability = 0, cd = cd)
+  for (i in 1:n_item) {
+    cat_data$est_history[[i]]$est_before <- test_data$est_before[i]
+    cat_data$est_history[[i]]$resp <- test_data$resp[i]
+    cat_data$est_history[[i]]$est_after <- test_data$est_after[i]
+  }
+
+  qip_k <- qip_index(cat_sim_output = cat_data)
+  expect_equal(unname(qip_k[1, ]), test_data$qip_k, tolerance = 1e-3)
+  qip <- qip_index(cat_sim_output = cat_data, summary_func = "mean")
+  expect_equal(qip, tail(test_data$qip, 1), tolerance = 1e-3)
+
+  # -------------------------------------------------------------------------- #
+  # QIP Works for 1PL
+  n <- 10 # number of items
+  ip <- itempool(data.frame(b = rnorm(n)), item_id = paste0("i-", 1:n))
+
+  cd <- create_cat_design(ip = ip, next_item_rule = "random",
+                         termination_rule = "max_item",
+                         termination_par = list(max_item = n))
+  co <- cat_sim(true_ability = rnorm(sample(5:20, 1)), cd = cd)
+  qip_mean <- qip_index(co, summary_func = "mean")
+  qip_median <- qip_index(co, summary_func = "median")
+  qip_min <- qip_index(co, summary_func = "min")
+  qip_max <- qip_index(co, summary_func = "max")
+  qip_q55 <- qip_index(co, summary_func = "quantile", prob = .55)
+
+  i <- sample(1:length(co), 1)
+  qip <- qip_index(co[[i]], summary_func = NULL)[1,]
+  expect_equal(unname(qip_mean[i]), mean(qip))
+  expect_equal(unname(qip_median[i]), median(qip))
+  expect_equal(unname(qip_min[i]), min(qip))
+  expect_equal(unname(qip_max[i]), max(qip))
+  expect_equal(unname(qip_q55[i]), unname(quantile(qip, prob = .55)))
+
+})
+
