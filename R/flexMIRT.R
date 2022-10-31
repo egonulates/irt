@@ -296,7 +296,7 @@ flexmirt_check_model_argument <- function(resp_data, item_ids, model,
 #' Find or check the path for flexMIRT executable file
 #'
 #' @param flexmirt_exe The path of the flexMIRT executable file
-#'   "WinFlexMIRT.exe".
+#'   \code{"WinFlexMIRT.exe"}.
 #'
 #' @noRd
 flexmirt_find_exe <- function(flexmirt_exe = NULL) {
@@ -1197,7 +1197,7 @@ flexmirt_read_gof <- function(target_dir = getwd(),
 #'   requires flexMIRT program already installed on the Windows machine.
 #'   Visit \url{https://vpgcentral.com/software/flexmirt/} for more details
 #'   about the software. Even though flexMIRT can run various models, only a
-#'   selected set of unidimentional models can be fitted using
+#'   selected set of unidimensional models can be fitted using
 #'   \code{est_flexmirt} function.
 #'
 #' @param x A matrix/data.frame/Response_set object including examinee
@@ -1294,10 +1294,10 @@ flexmirt_read_gof <- function(target_dir = getwd(),
 #'                             v1 = c(0, 0, 1),
 #'                             v2 = c(1, 0.5, 3))}
 #'
-#'   Option 2: Different priors will be assingned to individual items.
+#'   Option 2: Different priors will be assigned to individual items.
 #'     The data.frame should have five columns. In addition to four columns
-#'     described above, a column specifiying item's ID should be added.
-#'     The column anme shoud be \code{"item_id"} and it's values should
+#'     described above, a column specifying item's ID should be added.
+#'     The column name should be \code{"item_id"} and it's values should
 #'     correspond to the item ID's specified in the response data.
 #'
 #'   Here is an example:
@@ -1311,7 +1311,7 @@ flexmirt_read_gof <- function(target_dir = getwd(),
 #' @param scoring_method A string value representing the method of scoring. The
 #'   currently available options are: "EAP" and "MAP".
 #' @param additional_options A vector of strings that will be added to the
-#'   syntax. For example, when \code{scoring_method = "ML"}, the minimun and
+#'   syntax. For example, when \code{scoring_method = "ML"}, the minimum and
 #'   maximum values of theta estimates needs to be specified:
 #'   \code{c("MinMLscore = -5;", "MaxMLscore = 5;")}. Or, when estimating "3PL"
 #'   parameters \code{"NormalMetric3PL = Yes;"} can be added to get a normal
@@ -1356,17 +1356,18 @@ flexmirt_read_gof <- function(target_dir = getwd(),
 #'
 #'   }
 #' @param flexmirt_exe This is the executable file to run flexMIRT syntax. On
-#'   most Windows computers this is the path where "WinFlexMIRT.exe" can be
-#'   found. For example:\code{"C:\Program Files\flexMIRT3.5.2\WinFlexMIRT.exe"}.
-#'   By default the value is \code{NULL}, the function will search the
-#'   relevant locations for "WinFlexMIRT.exe".
+#'   most Windows computers this is the path where \code{"WinFlexMIRT.exe"} can
+#'   be found. For example:
+#'   \code{"C:\Program Files\flexMIRT3.5.2\WinFlexMIRT.exe"}. By default the
+#'   value is \code{NULL}, the function will search the relevant locations for
+#'   \code{"WinFlexMIRT.exe"}.
 #' @param overwrite If TRUE and there is already a BILOG-MG data file in the
 #'   target path with the same name, the file will be overwritten.
 #' @param show_output_on_console logical (not NA), indicates whether to capture
 #'   the output of the command and show it on the R console. The default value
 #'   is \code{TRUE}.
 #'
-#' @return A list containg calibration results
+#' @return A list containing the calibration results
 #'   \describe{
 #'     \item{"ip"}{An \code{\link{Itempool-class}} object holding the item
 #'       parameters. Please check whether model converged (using

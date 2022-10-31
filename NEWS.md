@@ -19,7 +19,7 @@
   CAT output. For details, see "?`$.cat_output`". 
 * Added `output_type` argument to `est_ability(, output_type = )` function with
   available following output types: `"list"`, `"data.frame"`, `"tibble"`. 
-  Previoulsy, the output was only a "list".
+  Previously, the output was only a "list".
 
 # irt 0.1.4
 

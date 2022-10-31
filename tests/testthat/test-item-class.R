@@ -82,7 +82,7 @@ test_that("Test setValidity of Item class", {
                   class = "GPCM")
 
   # -------------------------------------------------------------------------- #
-  # Reparametrized Generalized Partial Credit items
+  # Reparameterized Generalized Partial Credit items
   expect_s4_class(new("GPCM2", d = c(-3, -.5, 1.5), b = 0.4, a = 1, D = 1),
                   class = "GPCM2")
   # An error will be raised if user switches b with d (b should have length 1)

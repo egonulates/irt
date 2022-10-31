@@ -202,7 +202,7 @@ test_that("prob - Item", {
                       dimnames = list(ip$item_id, paste0(0:length(b)))),
                tolerance = 1e-6)
 
-  ## Polytomous Items - Reparametrized Generalized Partial Model
+  ## Polytomous Items - Reparameterized Generalized Partial Model
   # -------------------------------------------------------------------------- #
   theta <- rnorm(1)
   D <- 1.702
@@ -213,7 +213,7 @@ test_that("prob - Item", {
   ip_gpcm <- item(a = a, b = b - d, D = D, model = 'GPCM')
   expect_identical(prob(ip = ip_gpcm2, theta = theta),
                prob(ip = ip_gpcm, theta = theta))
-  # Derivative of Polytomous Items - Reparametrized Generalized Partial Model
+  # Derivative of Polytomous Items - Reparameterized Generalized Partial Model
   expect_identical(prob(ip = ip_gpcm2, theta = theta, derivative = 0),
                prob(ip = ip_gpcm, theta = theta, derivative = 0))
   expect_identical(prob(ip = ip_gpcm2, theta = theta, derivative = 1),

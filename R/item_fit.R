@@ -72,7 +72,7 @@
 #'
 #' @references
 #'
-#' DeMars, C. E. (2005). Type I error rates for PARSCALE’s fit index.
+#' DeMars, C. E. (2005). Type I error rates for PARSCALE's fit index.
 #'   Educational and psychological measurement, 65(1), 42-50.
 #'
 #' Kang, T., & Chen, T. T. (2008). Performance of the generalized S-X2 item

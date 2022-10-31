@@ -110,7 +110,7 @@ ip <- itempool(ip_dtf, model = "GRM", D = 1.702)
 ip
 ```
 
-An example re-parametrized "GPCM" item pool (see 
+An example reparameterized "GPCM" item pool (see 
 [psychometric models](irt-models.html) vignette for details of this model):
 
 ```{r}

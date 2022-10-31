@@ -106,7 +106,7 @@ calculate_c <- function(t, method = "T1") {
 
 #' CUSUM based statistics for one examinee
 #'
-#' @param ip An itempool object
+#' @param ip An \code{\link{Itempool-class}} object
 #' @param resp a response vector, where the order of items represent the
 #'   administration order.
 #' @param theta A vector or length 1 or length equal to the number of items

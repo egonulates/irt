@@ -28,7 +28,7 @@ partition_scores <- function(score, cut_scores, cat_labels,
 #' @param cat_labels A string vector representing the labels of the categories.
 #'   The length of the vector should be one more than the length of the
 #'   cut scores. The default value is \code{NULL} where the categories will be
-#'   labelled as 1, 2, ..., (number of cut scores plus one). For example, if
+#'   labeled as 1, 2, ..., (number of cut scores plus one). For example, if
 #'   there are three cut scores category labels can be:
 #'   \code{c("Unsatisfactory", "Basic", "Mastery", "Advanced")}.
 #'
@@ -199,7 +199,7 @@ ca_perf_cat_matrix <- function(theta = NULL, theta_cs = NULL,
 #' @return A list of following elements:
 #'   \describe{
 #'     \item{\code{category_prob}}{A numeric vector representing the
-#'       performance category classificaiton probabilities of each examinee.}
+#'       performance category classification probabilities of each examinee.}
 #'     \item{\code{ca}}{Marginal (overall) classification accuracy index}
 #'     \item{\code{cc}}{Marginal (overall) classification consistency index}
 #'     \item{\code{ind_cs_ca}}{Individual cut score classification accuracy
@@ -277,7 +277,7 @@ ca_irt_ca_cc <- function(cat_prob, theta_cs, theta = NULL, raw_cs = NULL,
 #' @return A list of following elements:
 #'   \describe{
 #'     \item{\code{category_prob}}{A numeric vector representing the
-#'       performance category classificaiton probabilities of each examinee.}
+#'       performance category classification probabilities of each examinee.}
 #'     \item{\code{ca}}{Marginal (overall) classification accuracy index}
 #'     \item{\code{cc}}{Marginal (overall) classification consistency index}
 #'     \item{\code{ind_cs_ca}}{Individual cut score classification accuracy
@@ -541,7 +541,7 @@ ca_irt_recursive <- function(ip, theta, theta_cs = NULL, raw_cs = NULL,
 #' @param cat_labels A string vector representing the labels of the categories.
 #'   The length of the vector should be one more than the length of the
 #'   cut scores. The default value is \code{NULL} where the categories will be
-#'   labelled as 1, 2, ..., (number of cut scores plus one). For example, if
+#'   labeled as 1, 2, ..., (number of cut scores plus one). For example, if
 #'   there are three cut scores category labels can be:
 #'   \code{c("Unsatisfactory", "Basic", "Mastery", "Advanced")}.
 #'
@@ -649,24 +649,24 @@ classification_agreement_index <- function(true_score, estimated_score,
 #'   composed of any combination of unidimensional dichotomous or polytomous
 #'   items. Required for \code{"guo"} and \code{"recursive"} methods.
 #' @param theta A numeric vector representing the abilities of examinees.
-#'   Required for 'rudner' and 'recursive' method. For \code{"guo"} method, this
-#'   vector will be used to get performance category of each examinee if
-#'   \code{perf_categories} is \code{NULL}. The default value is \code{NULL}.
-#'   For \code{method = "guo"} either \code{theta} or \code{perf_categories}
-#'   should be provided.
+#'   Required for \code{'rudner'} and \code{'recursive'} method. For
+#'   \code{"guo"} method, this vector will be used to get performance category
+#'   of each examinee if \code{perf_categories} is \code{NULL}. The default
+#'   value is \code{NULL}. For \code{method = "guo"} either \code{theta} or
+#'   \code{perf_categories} should be provided.
 #' @param theta_cs A sorted (ascending order) numeric vector representing the
 #'   theta scale cut scores. Do not include \code{-Inf} or \code{Inf}. Required
-#'   for 'rudner' and 'guo' method; required for 'recursive' if 'raw_cs' is not
-#'   provided.
+#'   for \code{'rudner'} and \code{'guo'} method; required for 'recursive' if
+#'   \code{raw_cs} is not provided.
 #' @param raw_cs A sorted (ascending order) numeric vector of summed-score cut
 #'   score values. Do not include 0 or the maximum possible score of the test in
 #'   this vector. Required for 'recursive' method if 'theta_cs' is not provided.
 #' @param resp A \code{\link{Response_set-class}}, a \code{matrix} or a
 #'   \code{data.frame} object that holds responses. If \code{matrix} or a
 #'   \code{data.frame} provided, they will be converted to a
-#'   \code{\link{Response_set-class}}. Required for 'guo' method.
+#'   \code{\link{Response_set-class}}. Required for \code{'guo'} method.
 #' @param se A numeric vector representing the standard errors of ability
-#'   estimates. Required for 'rudner' method.
+#'   estimates. Required for \code{'rudner'} method.
 #' @param perf_categories An integer  vector representing the performance
 #'   categories of examinees. The number 1 should represent the lowest category.
 #'   For example if there are three cut scores the valid values can only be: 0,
@@ -676,17 +676,17 @@ classification_agreement_index <- function(true_score, estimated_score,
 #' @param n_theta An integer representing the number of equally spaced theta
 #'   points between cut scores. The default value is 100. Use larger values to
 #'   increase accuracy but larger numbers will also slow the speed of
-#'   calculation. Can optionally be provided for the 'guo' method.
+#'   calculation. Can optionally be provided for the \code{'guo'} method.
 #' @param theta_lower_bound A number representing the lower bound for cut
-#'   scores. The default value is -6. Can optionally be provided for the 'guo'
-#'   method.
+#'   scores. The default value is -6. Can optionally be provided for the
+#'   \code{'guo'} method.
 #' @param theta_upper_bound A number representing the upper bound for cut
-#'   scores. The default value is 6. Can optionally be provided for the 'guo'
-#'   method.
+#'   scores. The default value is 6. Can optionally be provided for the
+#'   \code{'guo'} method.
 #' @param cat_labels A string vector representing the labels of the categories.
 #'   The length of the vector should be one more than the length of the cut
 #'   scores. The default value is \code{NULL} where the categories will be
-#'   labelled as 1, 2, ..., (number of cut scores plus one). For example, if
+#'   labeled as 1, 2, ..., (number of cut scores plus one). For example, if
 #'   there are three cut scores category labels can be:
 #'   \code{c("Unsatisfactory", "Basic", "Mastery", "Advanced")}. Can optional be
 #'   provided for all methods.
@@ -694,7 +694,7 @@ classification_agreement_index <- function(true_score, estimated_score,
 #' @return A list of following elements:
 #'   \describe{
 #'     \item{\code{category_prob}}{A numeric vector representing the
-#'       performance category classificaiton probabilities of each examinee.}
+#'       performance category classification probabilities of each examinee.}
 #'     \item{\code{ca}}{Marginal (overall) classification accuracy index}
 #'     \item{\code{cc}}{Marginal (overall) classification consistency index}
 #'     \item{\code{ind_cs_ca}}{Individual cut score classification accuracy

@@ -1108,7 +1108,7 @@ calculate_overlap_rates <- function(cat_sim_output, cd = NULL,
 #' values (-3, -2, -1, 0, 1, 2, 3), the function will not calculate score
 #' information values at theta = -3 and theta = 3. Score information values
 #' at second values to the edges (i.e. theta = -2 and theta = 2) will be
-#' calculated using Equation 11-2 of Sands et.al (1997). The rest of the
+#' calculated using Equation 11-2 of Sands et.al. (1997). The rest of the
 #' score information values (at theta = -1, 0, 1) will be calculated using
 #' equation 11-3 (page 128).
 #'
@@ -1269,7 +1269,7 @@ score_info <- function(true_theta, est_theta, bins = NULL) {
 #' @references
 #' Gönülateş, E. (2019). Quality of Item Pool (QIP) Index: A Novel Approach to
 #' Evaluating CAT Item Pool Adequacy. Educational and Psychological Measurement,
-#' 79(6), 1133–1155. \url{https://doi.org/10.1177/0013164419842215/}
+#' 79(6), 1133–1155. https://doi.org/10.1177/0013164419842215
 #'
 #' @examples
 #'

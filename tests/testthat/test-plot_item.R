@@ -42,7 +42,7 @@ test_that("Test plot.Item", {
     category_names = c("Strongly Strongly Disagree", "Disagree",  "Agree",
                        "Strongly Agree")))
 
-  ### Plot Reparametrized Generalized Partial Credit Model ###
+  ### Plot Reparameterized Generalized Partial Credit Model ###
   itm_gpcm <- generate_item(model = "GPCM2")
   expect_silent(p <- plot(itm_gpcm, suppress_plot = TRUE))
   expect_s3_class(p, 'ggplot')

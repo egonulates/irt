@@ -33,8 +33,9 @@
 #'       by dividing the mean of the scores for the item by the maximum
 #'       possible score of the item.}
 #'     \item{'pval_unadj'}{Unadjusted p-value, this is the mean of item scores
-#'       that is not adjusted for the maximum possible score as 'pval' column
-#'       does. For dichotomous items, this will be the same as 'pval' column.}
+#'       that is not adjusted for the maximum possible score as \code{'pval'}
+#'       column does. For dichotomous items, this will be the same as
+#'       \code{'pval'} column.}
 #'     \item{'pbis'}{Point biserial correlation.}
 #'     \item{'bis'}{Biserial correlation.}
 #'     \item{'pbis_adj'}{Point biserial correlation between item and total score

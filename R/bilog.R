@@ -946,14 +946,15 @@ wrap_text <- function(t, width = 80, tab = NULL, skip_tab = 0) {
 #'   order to specify priors, a list of one or more of the following elements
 #'   needs to be provided:
 #'   \describe{
-#'     \item{"ALPHA"}{"'alpha' parameters for the beta prior distribution of
-#'       lower asymptote (guessing) parameters"}
-#'     \item{"BETA"}{"'beta' parameters for the beta prior distribution of
-#'       lower asymptote (guessing) parameters."}
-#'     \item{"SMU"}{prior means for slope parameters}
-#'     \item{"SSIGMA"}{prior standard deviations for slope parameters}
-#'     \item{"TMU"}{prior means for threshold parameters}
-#'     \item{"TSIGMA"}{prior standard deviations for threshold parameters}
+#'     \item{\code{"ALPHA"}}{"'alpha' parameters for the beta prior distribution
+#'       of lower asymptote (guessing) parameters"}
+#'     \item{\code{"BETA"}}{"'beta' parameters for the beta prior distribution
+#'       of lower asymptote (guessing) parameters."}
+#'     \item{\code{"SMU"}}{prior means for slope parameters}
+#'     \item{\code{"SSIGMA"}}{prior standard deviations for slope parameters}
+#'     \item{\code{"TMU"}}{prior means for threshold parameters}
+#'     \item{\code{"TSIGMA"}}{prior standard deviations for threshold
+#'       parameters}
 #'     }
 #'   Quoted descriptions were taken from BILOG-MG manual.
 #'
@@ -974,10 +975,10 @@ wrap_text <- function(t, width = 80, tab = NULL, skip_tab = 0) {
 #'
 #'   \deqn{mode = \frac{\alpha - 1}{\alpha + \beta - 2}}
 #'
-#'   Also, one can set SSIGMA or TSIGMA to a very small value to effectively
-#'   fix the item parameters, for example set \code{TSIGMA = 0.005} or
-#'   \code{SSIGMA = 0.001} to effectively fix those item parameters. Note that
-#'   there might be convergence issues with these restrictions.
+#'   Also, one can set \code{SSIGMA} or \code{TSIGMA} to a very small value to
+#'   effectively fix the item parameters, for example set \code{TSIGMA = 0.005}
+#'   or \code{SSIGMA = 0.001} to effectively fix those item parameters. Note
+#'   that there might be convergence issues with these restrictions.
 #'
 #'   Note that a non-null \code{prior_ip} value will automatically add
 #'   \code{READPRIOR} option to \code{CALIB} section.

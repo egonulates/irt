@@ -87,7 +87,7 @@
 #' @param tol The precision level of ability estimate. The final ability
 #'   estimates will be rounded to remove the precision that is smaller than the
 #'   \code{tol} value. The default value is \code{1e-06}.
-#' @param output_type A string that specifies the output type of the funciton.
+#' @param output_type A string that specifies the output type of the function.
 #'   The default value is \code{"list"}.
 #'   Available options are:
 #'   \describe{

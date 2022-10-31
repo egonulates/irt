@@ -532,7 +532,7 @@ CAT_TESTLET_RULES <- list(
 #'          The following list elements are available:
 #'
 #'          \describe{
-#'            \item{\code{next_item_rule}}{The way item selection is perfomed
+#'            \item{\code{next_item_rule}}{The way item selection is performed
 #'              within a testlet. Following options are available:
 #'              \describe{
 #'                \item{\code{"none"}}{Items are selected with the order of

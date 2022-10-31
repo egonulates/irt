@@ -419,7 +419,7 @@ PMODELS <- list(
              min = -.Machine$double.xmax, max = .Machine$double.xmax,
              default_value = DEFAULT_D_SCALING)),
     model_family = "PIRT",
-    verbose_name = "Reparametrized Generalized Partial Credit Model")
+    verbose_name = "Reparameterized Generalized Partial Credit Model")
   )
 
 # Unidimensional psychometric models for dichotomous items
@@ -1224,7 +1224,7 @@ setValidity(
 ###############################################################################@
 ############################# GPCM2 class ######################################
 ###############################################################################@
-#' Reparametrized Generalized Partial Credit Model
+#' Reparameterized Generalized Partial Credit Model
 #'
 #' @slot a Item discrimination parameter
 #' @slot b Overall location parameter

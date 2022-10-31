@@ -35,7 +35,7 @@ the `irt` package.
 | GRM   | Graded Response Model                           | a, b, D       |
 | PCM   | Partial Credit Model                            | b             |
 | GPCM  | Generalized Partial Credit Model                | a, b, D       |
-| GPCM2 | Reparametrized Generalized Partial Credit Model | a, b, d, D    |
+| GPCM2 | Reparameterized Generalized Partial Credit Model | a, b, d, D    |
 
 
 ## Rasch Model
@@ -317,7 +317,7 @@ plot(itm_pcm)
 
 <!-- ####################################################################### -->
 
-## Re-parametrized Generalized Partial Credit Model (GPCM2)
+## Reparameterized Generalized Partial Credit Model (GPCM2)
 
 For an examinee $i$ with ability $\theta_i$, the probability of a 
 response $k$ to an item $j$ with possible scores $k = 0, 1, \ldots, m_j$: 

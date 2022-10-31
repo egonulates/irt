@@ -57,7 +57,7 @@ get_data_plot_cat_output <- function(cat_output, plot_b) {
 #'   \code{TRUE}.
 #' @param se_band A logical value. If \code{TRUE}, a standard error band
 #'   is added around the estimated theta values. At each stage one standard
-#'   error of that stage is added to and subracted from the ability estimate
+#'   error of that stage is added to and subtracted from the ability estimate
 #'   at that stage. The default value is \code{TRUE}.
 #' @param horizontal_line An option to add a horizontal line. Provide either one
 #'          of these or a list of a combination of these (except \code{NULL}).

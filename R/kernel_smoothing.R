@@ -24,10 +24,10 @@
 #' @param kernel_func Choice of kernel function. Possible choices are:
 #'
 #'   \itemize{
-#'     \item{"gauss"}{Gaussian kernel. \eqn{f(x) = e^{-u^2/2}}.}
-#'     \item{"unif"}{Uniform kernel. \eqn{f(x) = 0.5, |u| < 0.5}, else 0.}
-#'     \item{"quadratic"}{Quadratic kernel. \eqn{f(x) = 0.75(1-u^2), |u| < 1},
-#'          else 0.}
+#'     \item{\code{"gauss"}}{Gaussian kernel. \eqn{f(x) = e^{-u^2/2}}.}
+#'     \item{\code{"unif"}}{Uniform kernel. \eqn{f(x) = 0.5, |u| < 0.5}, else 0.}
+#'     \item{\code{"quadratic"}}{Quadratic kernel.
+#'       \eqn{f(x) = 0.75(1-u^2), |u| < 1}, else 0.}
 #'     \item{Custom Function}{You can provide a custom kernel function object.
 #'       The function should be maximum at \eqn{u = 0} and gets closer to 0
 #'       on either side.}

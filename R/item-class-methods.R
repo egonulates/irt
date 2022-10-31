@@ -91,7 +91,7 @@
 #' item(a = 1.9, b = c(-1.6, -0.09, 1.25), model = "GPCM")
 #' item(parameters = list(a = 1.9, b = c(-1, 2), D = 1), model = "GPCM")
 #'
-#' # Create a GPCM2 model (Reparametrized GPCM model)
+#' # Create a GPCM2 model (Reparameterized GPCM model)
 #' item(a = 1.9, b = 0.65, d = c(-1.6, -0.09, 1.25), model = "GPCM2")
 #' item(parameters = list(a = 1.9, b = 0.65, d = c(-1.6, -0.09, 1.25), D = 1.7),
 #'      model = "GPCM2")
