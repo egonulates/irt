@@ -1337,14 +1337,41 @@ test_that("Test 'print.Response_set' function", {
 
   # 11th column/item_id is not in the title
   expect_false(any(grepl(colnames(resp_set_matrix)[11], x[1:5])))
+  expect_output(print(resp_set, n = 1, base_print = TRUE))
   expect_output(print(resp_set, base_print = TRUE),
                 paste0("... with ", n_theta - 10, " more responses, and ",
                        n_item - 10, " more items:"))
 
   # ---------------------------------------------------------------------------#
-  # print(..., n = XXX) should be a valid number
+  # If an item does not have any responses but in the resp_set@item_id, it will
+  # be printed
+  ip <- c(generate_testlet(item_id_preamble = "t1", n = 3),
+          generate_ip(n = 20, model = c("2PL", "3PL", "GPCM", "PCM", "GRM")),
+          generate_testlet(item_id_preamble = "t2"),
+          generate_testlet(item_id_preamble = "t3"))
+  test_item_id <- "TestItemY"
+  ip$item_id[4] <- test_item_id
+  x <- generate_resp_set(ip = ip, theta = rnorm(100), prop_missing = .8)
 
+  # Remove all responses for the item
+  for (i in 1:length(x)) {
+    temp <- x@response_list[[i]]
+    if (test_item_id %in% temp@item_id) {
+      r <- which(test_item_id == temp@item_id)
+      for (s in c("item_id", "testlet_id", "score", "raw_response", "order")) {
+        slot(temp, name = s) <- slot(temp, name = s)[-r]
+      }
+    }
+    x@response_list[[i]] <- temp
+  }
+  expect_output(print(x, base_print = TRUE), paste0(test_item_id, "[ ]+Item_2"))
+  expect_output(print(x, n = 1, base_print = TRUE),
+                paste0(test_item_id, "[ ]+Item_2"))
+
+  # ---------------------------------------------------------------------------#
+  # print(..., n = XXX) should be a valid number
   # TODO
+  # print(x, n = "y")
 
 
 })

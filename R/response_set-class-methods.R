@@ -817,9 +817,9 @@ as.list.Response_set <- function(x, ...) return(x@response_list)
   # TODO: maybe only first responses can be converted to matrix. But if
   # the responses towards the end has more responses to different item than
   # the previous ones, fewer items might be displayed.
-  result <- as.matrix(x, output = "score")
+  result <- as.matrix(x[1:n], output = "score")
 
-  if (all(is.na(result))) result <- as.matrix(x, output = "raw_response")
+  if (all(is.na(result))) result <- as.matrix(x[1:n], output = "raw_response")
 
   num_of_items <- ncol(result)
 
@@ -832,7 +832,7 @@ as.list.Response_set <- function(x, ...) return(x@response_list)
   if (n < 1) {
     result <- ""
   } else if (n < num_of_resp) {
-    result <- result[1:n, ]
+    result <- result[1:n, , drop = FALSE]
   }
 
   if (print_tibble) {
