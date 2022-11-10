@@ -92,11 +92,11 @@ setMethod(
 calculate_c <- function(t, method = "T1") {
   if (method %in% paste0("T", 1:8)) {
     n <- length(t)
-    Cp  <- rep(0, n+1)
-    Cn <- rep(0, n+1)
-    for (i in 2:(n+1)) {
-      Cp[i] <- max(0, t[i-1] + Cp[i-1])
-      Cn[i] <- min(0, t[i-1] + Cn[i-1])
+    Cp  <- rep(0, n + 1)
+    Cn <- rep(0, n + 1)
+    for (i in 2:(n + 1)) {
+      Cp[i] <- max(0, t[i - 1] + Cp[i - 1])
+      Cn[i] <- min(0, t[i - 1] + Cn[i - 1])
     }
     return(data.frame(Cp = Cp[-1], Cn = Cn[-1]))
   }
@@ -138,11 +138,11 @@ calculate_c <- function(t, method = "T1") {
 #'   person-misfit in adaptive testing using statistical process control
 #'   techniques. In W. J. van der Linden & C. A. W. Glas (Eds.),
 #'   Computerized adaptive testing: Theory and practice (pp. 210–219).
-#'   Kluwer. https://doi.org/10.1007/0-306-47531-6_11
+#'   Kluwer.
 #'
 #' Xiaofeng Yu & Ying Cheng (2020): A Comprehensive Review and Comparison of
 #'   CUSUM and Change-Point-Analysis Methods to Detect Test Speededness,
-#'   Multivariate Behavioral Research, DOI: 10.1080/00273171.2020.1809981
+#'   Multivariate Behavioral Research, <doi:10.1080/00273171.2020.1809981>
 #'
 #' @include item-class.R
 #' @include itempool-class.R

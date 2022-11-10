@@ -78,14 +78,14 @@
 #' Kang, T., & Chen, T. T. (2008). Performance of the generalized S-X2 item
 #'   fit index for polytomous IRT models.
 #'   *Journal of Educational Measurement*, 45(4), 391–406.
-#'   https://doi.org/10.1111/j.1745-3984.2008.00071.x
+#'   <doi:10.1111/j.1745-3984.2008.00071.x>
 #'
 #' Orlando, M., & Thissen, D. (2000). New item fit indices for dichotomous
 #'   item response theory models. Applied Psychological Measurement, 24, 50–64.
 #'
 #' Yen, W. M. (1981). Using simulation results to choose a latent trait model.
 #'   *Applied Psychological Measurement*, 5(2), 245–262.
-#'   https://doi.org/10.1177/014662168100500212
+#'   <doi:10.1177/014662168100500212>
 #'
 #' Yen, W. M. (1984). Effects of local item dependence on the fit and equating
 #'   performance of the three-parameter logistic model.

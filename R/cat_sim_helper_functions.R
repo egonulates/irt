@@ -1269,7 +1269,7 @@ score_info <- function(true_theta, est_theta, bins = NULL) {
 #' @references
 #' Gönülateş, E. (2019). Quality of Item Pool (QIP) Index: A Novel Approach to
 #' Evaluating CAT Item Pool Adequacy. Educational and Psychological Measurement,
-#' 79(6), 1133–1155. https://doi.org/10.1177/0013164419842215
+#' 79(6), 1133–1155. <doi:10.1177/0013164419842215>
 #'
 #' @examples
 #'

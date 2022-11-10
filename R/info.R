@@ -409,7 +409,7 @@ setMethod(
 #' @references
 #' Chang, H.-H., & Ying, Z. (1996). A Global Information Approach to
 #' Computerized Adaptive Testing. Applied Psychological Measurement, 20(3),
-#' 213-229. doi: 10.1177/014662169602000303
+#' 213-229. <doi:10.1177/014662169602000303>
 #'
 #' #rdname info_kl
 #' @noRd
