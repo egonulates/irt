@@ -32,6 +32,7 @@ test_that("ca_perf_cat", {
   expect_true(all(cat3 %in% seq(length(theta_cs) + 1)))
 
 
+  # -------------------------------------------------------------------------- #
   ### Example 2 ###
   ip <- generate_ip(model = sample(c("GPCM", "2PL"), 10, TRUE))
   theta <- seq(-3, 3, .2)
@@ -144,7 +145,7 @@ test_that("classification_agreement_index", {
   expect_equal(result$ca, sum(diag(result$ca_table))/15)
 
 
-  ##########################################################################@###
+  # -------------------------------------------------------------------------- #
   ip <- generate_ip(model = sample(c("GPCM", "2PL"), 20, TRUE))
   n_examinee <- 1000
   true_theta <- rnorm(n_examinee)
@@ -243,6 +244,190 @@ test_that("classification_indices", {
   expect_true(all(result$ind_cs_ca > 0.5 & result$ind_cs_ca < 1))
   expect_equal(names(result$category_prob), examinee_ids)
 
+})
 
+
+############################################################################@###
+################### kappa_coef #################################################
+############################################################################@###
+
+
+test_that("kappa_coef", {
+  # Examples are from:
+  # Julius Sim, Chris C Wright, The Kappa Statistic in Reliability Studies: Use,
+  # Interpretation, and Sample Size Requirements, Physical Therapy, Volume 85,
+  # Issue 3, 1 March 2005, Pages 257–268, https://doi.org/10.1093/ptj/85.3.257
+
+  # -------------------------------------------------------------------------- #
+  # Sim and Wright (2005), Table 1
+  dtf <- data.frame(r1 = c(rep("Relevant", 22), rep("Relevant", 2),
+                           rep("Not Relevant", 4), rep("Not Relevant", 11)),
+                    r2 = c(rep("Relevant", 22), rep("Not Relevant", 2),
+                           rep("Relevant", 4), rep("Not Relevant", 11)))
+  observed <- kappa_coef(dtf)
+  expect_equal(observed, 0.67, tolerance = 0.01)
+
+  # -------------------------------------------------------------------------- #
+  # Sim and Wright (2005), Table 2
+  pain_raw <- data.frame(t1 = c(rep("No Pain", 15 + 3 + 1 + 1),
+                                rep("Mild Pain", 4 + 18 + 3 + 2),
+                                rep("Moderate Pain", 4 + 5 + 16 + 4),
+                                rep("Severe Pain", 1 + 2 + 4 + 17)),
+                         t2 = c(rep("No Pain", 15), rep("Mild Pain", 3),
+                                rep("Moderate Pain", 1), rep("Severe Pain", 1),
+                                rep("No Pain", 4), rep("Mild Pain", 18),
+                                rep("Moderate Pain", 3), rep("Severe Pain", 2),
+                                rep("No Pain", 4), rep("Mild Pain", 5),
+                                rep("Moderate Pain", 16), rep("Severe Pain", 4),
+                                rep("No Pain", 1), rep("Mild Pain", 2),
+                                rep("Moderate Pain", 4), rep("Severe Pain", 17))
+    )
+  observed <- kappa_coef(pain_raw)
+  expect_equal(observed, 0.55, tolerance = 0.01)
+
+  # Make them ordered
+  ordered_pain_levels <- c("No Pain", "Mild Pain", "Moderate Pain",
+                           "Severe Pain")
+  pain_ordered <- data.frame(
+    t1 = factor(pain_raw$t1, levels = ordered_pain_levels, ordered = TRUE),
+    t2 = factor(pain_raw$t2, levels = ordered_pain_levels, ordered = TRUE))
+
+  # Test 'unweighted'
+  observed <- kappa_coef(pain_ordered)
+  expect_equal(observed, 0.55, tolerance = 0.01)
+  # Test 'linear'
+  observed <- kappa_coef(pain_ordered, weights = "linear")
+  expect_equal(observed, 0.61, tolerance = 0.01)
+  # Test 'quadratic'
+  observed <- kappa_coef(pain_ordered, weights = "quadratic")
+  expect_equal(observed, 0.67, tolerance = 0.01)
+
+  # -------------------------------------------------------------------------- #
+  # Sim and Wright (2005), Table 2, convert to integers
+  dtf <- sapply(pain_ordered, function(x) as.integer(x))
+  # Test 'linear'
+  observed <- kappa_coef(dtf, weights = "linear")
+  expect_equal(observed, 0.61, tolerance = 0.01)
+  # Test 'quadratic'
+  observed <- kappa_coef(dtf, weights = "quadratic")
+  expect_equal(observed, 0.67, tolerance = 0.01)
+
+  # -------------------------------------------------------------------------- #
+  # Function works with tibble
+  pain_tibble <- tibble::as_tibble(pain_ordered)
+  # Test 'unweighted'
+  observed <- kappa_coef(x = pain_tibble)
+  expect_equal(observed, 0.55, tolerance = 0.01)
+  # Test 'linear'
+  observed <- kappa_coef(pain_tibble, weights = "linear")
+  expect_equal(observed, 0.61, tolerance = 0.01)
+  # Test 'quadratic'
+  observed <- kappa_coef(pain_tibble, weights = "quadratic")
+  expect_equal(observed, 0.67, tolerance = 0.01)
+
+  # -------------------------------------------------------------------------- #
+  # Function works with matrix
+  pain_matrix <- as.matrix(pain_ordered)
+  observed <- kappa_coef(x = pain_matrix)
+  expect_equal(observed, 0.55, tolerance = 0.01)
+
+  # -------------------------------------------------------------------------- #
+  # TODO: Function works with matrix with ordered factors
+  # pain_matrix <- as.matrix(pain_ordered)
+  # pain_matrix <- apply(pain_matrix, 2, factor, levels = ordered_pain_levels,
+  #                      ordered = TRUE)
+  # # Test 'linear'
+  # observed <- kappa_coef(pain_matrix, weights = "linear")
+  # expect_equal(observed, 0.61, tolerance = 0.01)
+  # # Test 'quadratic'
+  # observed <- kappa_coef(pain_matrix, weights = "quadratic")
+  # expect_equal(observed, 0.67, tolerance = 0.01)
+
+
+  # -------------------------------------------------------------------------- #
+  # Sim and Wright (2005), Table 3
+  spinal_pain <- data.frame(
+    t1 = c(rep("Derangement syndrome", 22 + 10 + 2),
+           rep("Dysfunctional syndrome", 6 + 27 + 11),
+           rep("Postural syndrome", 2 + 5 + 17)),
+    t2 = c(rep("Derangement syndrome", 22), rep("Dysfunctional syndrome", 10),
+           rep("Postural syndrome", 2),
+           rep("Derangement syndrome", 6), rep("Dysfunctional syndrome", 27),
+           rep("Postural syndrome", 11),
+           rep("Derangement syndrome", 2), rep("Dysfunctional syndrome", 5),
+           rep("Postural syndrome", 17)
+           )
+    )
+  observed <- kappa_coef(spinal_pain, weights = "unweighted")
+  expect_equal(observed, 0.46, tolerance = 0.01)
+
+  # -------------------------------------------------------------------------- #
+  # Check whether missing categories successfully run for factors
+  dtf <- pain_raw[sample(nrow(pain_raw)), ]
+  dtf$t2[dtf$t2 == "Mild Pain"] <- "No Pain"
+  dtf$t1[dtf$t1 == "Severe Pain"] <- "Moderate Pain"
+
+  dtf_ordered <- data.frame(t1 = factor(dtf$t1, levels = c(
+    "No Pain", "Mild Pain", "Moderate Pain", "Severe Pain"), ordered = TRUE),
+    t2 = factor(dtf$t2, levels = c("No Pain", "Mild Pain", "Moderate Pain",
+                                   "Severe Pain"), ordered = TRUE))
+  observed <- kappa_coef(dtf, weights = "unweighted")
+  expected <- kappa_coef(dtf_ordered, weights = "unweighted")
+  expect_equal(observed, expected)
+
+  # Check missing integers makes any difference
+  dtf_integer <- sapply(dtf_ordered, as.integer)
+  observed <- kappa_coef(dtf_integer, weights = "unweighted")
+  expect_equal(observed, expected)
+
+  # -------------------------------------------------------------------------- #
+  # Check whether missing categories successfully run for integers
+  dtf <- pain_raw[sample(nrow(pain_raw)), ]
+  dtf$t2[dtf$t2 == "Mild Pain"] <- "No Pain"
+  dtf$t1[dtf$t1 == "Severe Pain"] <- "Moderate Pain"
+
+  dtf_ordered <- data.frame(
+    t1 = factor(dtf$t1, levels = ordered_pain_levels, ordered = TRUE),
+    t2 = factor(dtf$t2, levels = ordered_pain_levels, ordered = TRUE))
+  dtf_integer <- sapply(dtf_ordered, as.integer)
+
+  observed <- kappa_coef(dtf, weights = "unweighted")
+  expected <- kappa_coef(dtf_integer, weights = "unweighted")
+  expect_equal(observed, expected)
+
+  # Test 'linear'
+  observed <- kappa_coef(dtf_integer, weights = "linear")
+  expected <- kappa_coef(dtf_ordered, weights = "linear")
+  expect_equal(observed, expected)
+  # Test 'quadratic'
+  observed <- kappa_coef(dtf_integer, weights = "quadratic")
+  expected <- kappa_coef(dtf_ordered, weights = "quadratic")
+  expect_equal(observed, expected)
+
+
+  # -------------------------------------------------------------------------- #
+  # Rows with Missing values are ignored
+  dtf_missing <- pain_ordered
+  rows_with_missing <- sample(1:nrow(dtf_missing), 4)
+  for (i in rows_with_missing)
+    dtf_missing[i, sample(1:2, 1)] <- NA
+  dtf_missing_rows <- dtf_missing[-rows_with_missing, ]
+
+  observed <- kappa_coef(dtf_missing, weights = "unweighted")
+  expected <- kappa_coef(dtf_missing_rows, weights = "unweighted")
+  expect_equal(observed, expected)
+  observed <- kappa_coef(dtf_missing, weights = "quadratic")
+  expected <- kappa_coef(dtf_missing_rows, weights = "quadratic")
+  expect_equal(observed, expected)
+
+  # -------------------------------------------------------------------------- #
+  # If there is only one category and all categories are equal, there is
+  # perfect aggreement
+  dtf <- data.frame(r1 = rep(1, 30), r2 = rep(1, 30))
+  observed <- kappa_coef(dtf, weights = "unweighted")
+  expect_equal(observed, 1)
+
+  # -------------------------------------------------------------------------- #
 
 })
+

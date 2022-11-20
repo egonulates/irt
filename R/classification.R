@@ -1,4 +1,7 @@
 
+############################################################################@###
+################### partition_scores ###########################################
+############################################################################@###
 
 partition_scores <- function(score, cut_scores, cat_labels,
                              include.lowest = TRUE,
@@ -11,6 +14,11 @@ partition_scores <- function(score, cut_scores, cat_labels,
       include.lowest = include.lowest,
       right = right, ordered_result = TRUE, labels = cat_labels)
 }
+
+
+############################################################################@###
+################### ca_perf_cat ################################################
+############################################################################@###
 
 #' Calculate performance categories of examinees using scores and cut scores
 #'
@@ -118,6 +126,10 @@ ca_perf_cat <- function(theta = NULL, theta_cs = NULL, raw_score = NULL,
 }
 
 
+############################################################################@###
+################### ca_perf_cat_matrix #########################################
+############################################################################@###
+
 #' Calculate an indicator matrix for the performance category of examinees
 #'
 #' @param theta A numeric vector representing the abilities of examinees.
@@ -178,6 +190,9 @@ ca_perf_cat_matrix <- function(theta = NULL, theta_cs = NULL,
 }
 
 
+############################################################################@###
+################### ca_irt_ca_cc ###############################################
+############################################################################@###
 
 #' Calculate classification accuracy and consistency for IRT based methods
 #'
@@ -256,6 +271,10 @@ ca_irt_ca_cc <- function(cat_prob, theta_cs, theta = NULL, raw_cs = NULL,
 }
 
 
+############################################################################@###
+################### ca_irt_rudner ##############################################
+############################################################################@###
+
 #' Calculate Rudner's expected classification accuracy and consistency index
 #'
 #' @description This function calculates the expected classification accuracy
@@ -325,6 +344,10 @@ ca_irt_rudner <- function(theta, se, theta_cs, perf_categories = NULL,
                       cat_labels = cat_labels))
 }
 
+
+############################################################################@###
+################### ca_irt_guo #################################################
+############################################################################@###
 
 #' Calculate Guo's classification accuracy and consistency indices
 #'
@@ -416,6 +439,9 @@ ca_irt_guo <- function(ip, resp, theta_cs, theta = NULL,
                       cat_labels = cat_labels))
 }
 
+############################################################################@###
+################### ca_irt_recursive_cond_category_prob ########################
+############################################################################@###
 
 #' Calculate conditional category probabilities using recursive method
 #'
@@ -469,6 +495,11 @@ ca_irt_recursive_cond_category_prob <- function(ip, theta, raw_cs,
   return(result)
 }
 
+
+
+############################################################################@###
+################### ca_irt_recursive ###########################################
+############################################################################@###
 
 #' Calculate classification accuracy/consistency using recursive method
 #'
@@ -525,9 +556,12 @@ ca_irt_recursive <- function(ip, theta, theta_cs = NULL, raw_cs = NULL,
                       raw_cs = raw_cs, theta = theta, ip = ip,
                       perf_categories = perf_categories,
                       cat_labels = cat_labels))
-
 }
 
+
+############################################################################@###
+################### classification_agreement_index #############################
+############################################################################@###
 
 #' Calculate agreement index
 #'
@@ -606,6 +640,9 @@ classification_agreement_index <- function(true_score, estimated_score,
 }
 
 
+############################################################################@###
+################### classification_indices #####################################
+############################################################################@###
 
 #' Calculate classification accuracy and consistency
 #'
@@ -793,6 +830,206 @@ classification_indices <- function(
                       cat_labels = cat_labels))
   } else
     stop("Invalid 'method'. This method has not been implemented yet.")
+}
+
+
+
+############################################################################@###
+################### kappa_coef #################################################
+############################################################################@###
+#' Calculate Cohen's Kappa Coefficient
+#'
+#' @description This function calculates weighted or unweighted Kappa
+#'   coefficient for two sets of ratings. Kappa coefficient quantifies the
+#'   agreement between two sets of ratings (like two raters) beyond what is
+#'   expected by chance. It can be used as a measure of inter-rater reliability.
+#'
+#'   If the ratings are ordinal (for example Likert scale), weighted kappa
+#'   coefficient can be used. Weighted Kappa penalizes the larger discrepancies
+#'   between raters. More emphasis is put to large differences between rating
+#'   and small emphais will be put on smaller differences. The available
+#'   weighting options are \code{"linear"} and \code{"quadratic"}. By default
+#'   the function calculates \code{"unweighted"} Kappa coefficient.
+#'
+#' @param x A matrix/data.frame with two columns where each column contains
+#'   a set of ratings. When \code{weights = "linear"} or
+#'   \code{weights = "quadratic"}, each row should be an ordered factor or
+#'   numbers. The rows with missing values (i.e. \code{NA}) will be removed
+#'   from the analysis.
+#' @param weights Either a string representing the weighting method. Or, a
+#'   square matrix of weights that will be applied to the cross table
+#'   (assuming the ratings are ordered factors or numeric).
+#'   There are three possible weighting methods (aside from the custom
+#'   weights method):
+#'   \describe{
+#'     \item{\code{'unweighted'}}{
+#'       This is the original Kappa coefficient where no weighting applied.
+#'       This is the default method. This method is appropriate for both
+#'       nominal (i.e. unordered) data or ordinal (i.e. ordered) data.
+#'     }
+#'     \item{\code{'linear'}}{Linear weights applied.}
+#'     \item{\code{'quadratic'}}{Quadratic weights applied. }
+#'   }
+#'
+#' @return A Kappa coefficient which is a number between -1 and 1. 1 means
+#'   perfect agreement between ratings. 0 means agreement between rating is no
+#'   better than agreement one would get merely by chance. Negative values means
+#'   the agreement is even worse than one would get by chance.
+#'
+#' @references
+#' Cohen, Jacob (1960). "A coefficient of agreement for nominal scales".
+#' Educational and Psychological Measurement. 20 (1): 37–46.
+#'
+#' Sim, J., & Wright, C. C. (2005). The kappa statistic in reliability studies:
+#' use, interpretation, and sample size requirements. Physical therapy, 85(3),
+#' 257-268.
+#'
+#' @author Emre Gonulates
+#'
+#' @export
+#'
+#' @examples
+#'
+#' #########  Example 1  #########
+#' # Hypothetical data from Sim and Wright (2005), Table 1
+#' # "Diagnostic Assessments of Relevance of Lateral Shift by 2 Clinicians"
+#' dtf <- data.frame(c1 = c(rep("Relevant", 22), rep("Relevant", 2),
+#'                          rep("Not Relevant", 4), rep("Not Relevant", 11)),
+#'                   c2 = c(rep("Relevant", 22), rep("Not Relevant", 2),
+#'                          rep("Relevant", 4), rep("Not Relevant", 11)))
+#' kappa_coef(dtf)
+#'
+#' #########  Example 2  #########
+#' # Hypothetical data from Sim and Wright (2005), p.260, Table 2
+#' pain_raw <- data.frame(t1 = c(rep("No Pain", 15 + 3 + 1 + 1),
+#'                               rep("Mild Pain", 4 + 18 + 3 + 2),
+#'                               rep("Moderate Pain", 4 + 5 + 16 + 4),
+#'                               rep("Severe Pain", 1 + 2 + 4 + 17)),
+#'                        t2 = c(rep("No Pain", 15), rep("Mild Pain", 3),
+#'                               rep("Moderate Pain", 1), rep("Severe Pain", 1),
+#'                               rep("No Pain", 4), rep("Mild Pain", 18),
+#'                               rep("Moderate Pain", 3), rep("Severe Pain", 2),
+#'                               rep("No Pain", 4), rep("Mild Pain", 5),
+#'                               rep("Moderate Pain", 16), rep("Severe Pain", 4),
+#'                               rep("No Pain", 1), rep("Mild Pain", 2),
+#'                               rep("Moderate Pain", 4), rep("Severe Pain", 17))
+#'   )
+#' # Since data is ordinal, convert columns to ordinal factors:
+#' ordered_levels <- c("No Pain", "Mild Pain", "Moderate Pain", "Severe Pain")
+#' pain_ordered <- data.frame(
+#'   t1 = factor(pain_raw$t1, levels = ordered_levels, ordered = TRUE),
+#'   t2 = factor(pain_raw$t2, levels = ordered_levels, ordered = TRUE))
+#' table(pain_ordered)
+#'
+#' # Unweighted Kappa Coefficient
+#' kappa_coef(pain_ordered)
+#' # Kappa Coefficient with linear weights
+#' kappa_coef(pain_ordered, weights = "linear")
+#' # Kappa Coefficient with quadratic weights
+#' kappa_coef(pain_ordered, weights = "quadratic")
+#'
+
+kappa_coef <- function(x, weights = "unweighted") {
+
+  if (!inherits(x, c("data.frame", "matrix")) || ncol(x) != 2) {
+    stop("Invalid 'x'. 'x' should be a 'matrix' or 'data.frame' with 2 ",
+         "(two) columns.")
+  }
+  # remove rows with missing values
+  x <- x[stats::complete.cases(x),]
+  if (nrow(x) == 0) stop("Data has too many missingness. ",
+                         "Kappa cannot be calculated.")
+
+  if (inherits(x, "data.frame")) {
+    r1 <- x[[1]]
+    r2 <- x[[2]]
+  } else { # matrix
+    r1 <- x[, 1]
+    r2 <- x[, 2]
+  }
+  levels <- unique(c(r1, r2))
+
+  # Levels will be use to reconstruct an ordered factor later on
+  if (is.numeric(levels) || is.ordered(levels)) {
+    levels <- sort(levels)
+  }
+  ncat <- length(levels) # number of categories
+
+  if (ncat == 1 & all(r1 == r2)) {
+    return(1)
+  }
+
+  w <- NULL
+
+  if (is.null(weights)) weights <- "unweighted"
+  if (is.matrix(weights)) {
+    if (dim(weights) == 2 && ncol(weights) == ncat && nrow(weights) == ncat &&
+        is.numeric(weights)) {
+      w <- weights
+      weights <- "custom"
+    } else stop(paste0(
+      "Invalid 'weights'. If custom weights are provided, the dimension of ",
+      "weight matrix should be ", ncat, "x", ncat, "."))
+  }
+
+  # Check whether 'weights' argument is valid
+  if (!(is.character(weights) &&
+        length(weights) == 1 &&
+        tolower(weights) %in% c("custom", "unweighted", "linear", "quadratic"))) {
+    weights <- "unweighted"
+  } else {
+    weights <- tolower(weights)
+  }
+
+  # If weights are one of the "custom", "linear", "quadratic", each column
+  # should be ordered factor or numeric, otherwise raise a warning.
+  if (weights %in% c("custom", "linear", "quadratic") &&
+      (!(is.numeric(r1) || is.ordered(r1)) ||
+       !(is.numeric(r2) || is.ordered(r2)))
+      ) {
+    warning("When 'weights' argument is 'linear', 'quadratic', or custom, ",
+            "ratings should be an ordered factor or numeric.")
+  }
+
+
+  # converted to data frame because if x is a matrix, converting it to a factor
+  # will
+  xord <- as.data.frame(x) # Ordinal version of x will be saved in xord
+
+  # Converting to ordinal because if there are missing levels in one of the
+  # factors, 'ctab()' function will still populate empty levels.
+  for (i in 1:ncol(xord)) {
+    xord[, i] <- factor(xord[, i], levels = levels, ordered = TRUE)
+  }
+
+  # Setup the weight matrix
+  if (weights == "unweighted") {
+    # Set the weights for unweighted Kappa
+    w <- diag(ncat)
+  } else if (weights %in% c("linear", "quadratic")) {
+    # Make sure that each column of 'x' is ordered factor or has numeric values
+    # for weighted Kappa calculation
+    w <- matrix(0, ncol = ncat, nrow = ncat)
+    for (i in 1:ncat) {
+      for (j in 1:ncat) {
+        if (weights == "linear") {
+          w[i, j] <- 1 - abs(i - j)/(ncat - 1)
+        } else if (weights == "quadratic") {
+          w[i, j] <- 1 - ((i - j)/(ncat - 1))^2
+        }
+      }
+    }
+  }
+
+  ctab <- stats::xtabs(data = xord, drop.unused.levels = FALSE)
+  ctest <- suppressWarnings(stats::chisq.test(ctab, correct = FALSE))
+  # ctest <- suppressWarnings(chisq.test(x = xord[, 1], y = xord[, 2],
+  #                                      correct = FALSE))
+
+  result <- sum(w * ctest$observed - w * ctest$expected) /
+    (sum(ctest$observed) - sum(w * ctest$expected))
+
+  result
 }
 
 

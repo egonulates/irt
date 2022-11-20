@@ -1,4 +1,9 @@
 
+
+# irt 0.2.8
+* Added `kappa_coef()` function to calculate Cohen's weighted/unweighted Kappa 
+  coefficient.
+
 # irt 0.2.6
 
 * Plot functions can now suppress plot titles by setting `title = NULL`. 
