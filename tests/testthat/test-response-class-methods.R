@@ -161,6 +161,23 @@ test_that("Test 'print.Response()' function", {
   expect_true(any(grepl(" with 1 score\\.", output)))
   expect_false(any(grepl(" with 1 scores\\.", output)))
 
+  # ---------------------------------------------------------------------------#
+  # misc field with a factor printed correctly
+  r6 <- new(
+    "Response",
+    examinee_id = "Ex-842-1",
+    item_id = c("itm1", "itm2", "itm3", "itm4", "itm5", "itm6", "itm7", "itm8",
+                "itm9", "itm10", "itm11", "itm12"),
+    testlet_id = NULL,
+    score = c(0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1), raw_response = NULL,
+    order = NULL,
+    response_time = NULL,
+    misc = list(data = "ABC", stu_id = "Stu-842",
+                grade = structure(2L, levels = c("PreK", "Kindergarten",
+                                                 "First grade", "Other"),
+                                  class = c("ordered", "factor"))))
+  output <- capture.output(print(r6))
+  expect_true(any(grepl("Kindergarten", output)))
 })
 
 
@@ -269,6 +286,31 @@ test_that("Test 'as.data.frame.Response()' function", {
   expect_identical(rdf$lexile_level, resp@misc$lexile_level)
   expect_identical(rdf$ability, rep(resp@misc$ability, n))
   expect_identical(rdf$grade, rep(resp@misc$grade, n))
+
+  # ---------------------------------------------------------------------------#
+  # Another example with 'factor' misc field
+  resp <- new(
+    "Response",
+    examinee_id = "Ex-842-1",
+    item_id = c("itm1", "itm2", "itm3", "itm4", "itm5", "itm6", "itm7", "itm8",
+                "itm9", "itm10", "itm11", "itm12"),
+    testlet_id = NULL,
+    score = c(0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1), raw_response = NULL,
+    order = NULL,
+    response_time = NULL,
+    misc = list(data = "ABC", stu_id = "Stu-842",
+                grade = structure(2L, levels = c("PreK", "Kindergarten",
+                                                 "First grade", "Other"),
+                                  class = c("ordered", "factor"))))
+  rdf <- as.data.frame(resp)
+  n <- length(resp)
+  expect_identical(rdf$examinee_id, rep(resp@examinee_id, n))
+  expect_identical(rdf$item_id, resp@item_id)
+  expect_identical(rdf$score, resp@score)
+  expect_identical(rdf$raw_response, resp@raw_response)
+  expect_identical(rdf$stu_id, rep(resp@misc$stu_id, n))
+  expect_identical(rdf$grade, rep(resp@misc$grade, n))
+
 })
 
 

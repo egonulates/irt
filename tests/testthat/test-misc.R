@@ -220,7 +220,7 @@ test_that("is_atomic_vector", {
     p2 = mtcars,
     p3 = NULL,
     p4 = matrix(),
-    p5 = iris$Species, # Vector of factors
+    # p5 = iris$Species, # Vector of factors
     p5 = array()
   )
   # expect_false(is_atomic_vector(matrix()))
@@ -230,6 +230,7 @@ test_that("is_atomic_vector", {
   # expect_false(is_atomic_vector(array()))
 
   expect_false(any(sapply(expected_falses, is_atomic_vector)))
+  # expect_false(any(sapply(expected_falses, is.atomic)))
 
   expected_trues <- list(
     p1 = 3,
@@ -245,6 +246,11 @@ test_that("is_atomic_vector", {
   expect_true(is_atomic_vector(c(1, 4.2), class = c("integer", "numeric")))
   expect_error(is_atomic_vector(c(1, 4.2), class = c("xyz", "numeric")))
 
+  # -------------------------------------------------------------------------- #
+  # Factor
+  y <- structure(2L, levels = c("PreK", "Kindergarten", "First grade"),
+                 class = c("ordered", "factor"))
+  expect_true(is_atomic_vector(y))
 })
 
 

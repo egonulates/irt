@@ -3,6 +3,11 @@
 # irt 0.2.8
 * Added `kappa_coef()` function to calculate Cohen's weighted/unweighted Kappa 
   coefficient.
+* `Response` objects prints 'misc' fields without an error when there is a 
+  factor type variable. 
+* Fixed an error in the function `irt:::marginal_reliability(..., method = "empirical")`.
+
+
 
 # irt 0.2.6
 

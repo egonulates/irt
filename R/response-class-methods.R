@@ -232,6 +232,10 @@ as.data.frame.Response <- function(x, row.names = NULL, optional = FALSE, ...,
   # Print unique misc values or misc values whose lengths are not equal
   # to the number of items
   temp <- x@misc[!names(x@misc) %in% colnames(x_df)]
+  # factors are printed as integers when using 'str', convert them to
+  # "character" to show their values properly
+  temp <- lapply(temp,
+                 function(k) if (inherits(k, "factor")) as.character(k) else k)
   if (length(temp) > 0) {
     print_text(ifelse(any(names(x@misc) %in% colnames(x_df)),
                       "\nAdditional 'misc' fields:\n",

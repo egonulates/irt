@@ -1,7 +1,7 @@
 Package: irt
 Type: Package
 Title: Item Response Theory and Computerized Adaptive Testing Functions
-Version: 0.2.8-1
+Version: 0.2.8-2
 Authors@R: c(person(given = "Emre", 
                     family = "Gonulates", 
                     role = c("aut", "cre"),

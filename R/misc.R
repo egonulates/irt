@@ -319,8 +319,8 @@ is_single_value <- function(x, class = NULL, accept_na = FALSE) {
 #' @param x An object to be tested
 #' @param class class of the object. It can be either \code{NULL},
 #'   \code{"numeric"}, \code{"integer"}, \code{"character"}, \code{"logical"},
-#'   \code{"complex"} or \code{"Date"}. When it is \code{NULL}, it can be either
-#'   one of the five classes above.
+#'   \code{"complex"}, \code{"Date"}, or \code{"factor"}.
+#'   When it is \code{NULL}, it can be either one of the seven classes above.
 #' @param accept_na If \code{TRUE}, the object is allowed to be a \code{NA}.
 #'
 #' @return Either \code{TRUE} or \code{FALSE}
@@ -332,13 +332,20 @@ is_single_value <- function(x, class = NULL, accept_na = FALSE) {
 #' @noRd
 #'
 #' @examples
-#' is_atomic_vector(1:6)
-#' is_atomic_vector(1:6, class = "integer")
-#' is_atomic_vector(1:6, class = "numeric")
-#' is_atomic_vector(1:6, class = c("integer", "numeric"))
+#' is_atomic_vector(1:6) # TRUE
+#' is_atomic_vector(1:6, class = "integer") # TRUE
+#' is_atomic_vector(1:6, class = "numeric") # FALSE
+#' is_atomic_vector(1:6, class = c("integer", "numeric")) # TRUE
+#'
+#' is_atomic_vector(factor(c("a", "d", "a", "b", "c"))) # TRUE
+#'
+#' is_atomic_vector(matrix(c("a", "d", "a", "b", "c"))) # FALSE
+#' is_atomic_vector(data.frame(m = c("a", "d", "a", "b", "c"))) # FALSE
 is_atomic_vector <- function(
   x,
-  class = c("numeric", "integer", "character", "logical", "complex", "Date"),
+  class = c("numeric", "integer", "character", "logical", "complex", "Date",
+            # The following is not originally in vector
+            "factor"),
   accept_na = TRUE) {
   # if (is.null(accept_na) || !is.atomic(accept_na) || is.matrix(accept_na) ||
   #     length(accept_na) != 1 || !is.logical(accept_na))
@@ -348,7 +355,7 @@ is_atomic_vector <- function(
 
   # Check class
   acceptable_classes <- c("numeric", "integer", "character", "logical",
-                          "complex", "Date")
+                          "complex", "Date", "factor")
   if (!is.null(class) && !all(class %in% acceptable_classes))
     stop("'class' should be either 'numeric', 'integer', 'character', ",
          "'logical', 'complex' or NULL.", call. = FALSE)
@@ -357,7 +364,7 @@ is_atomic_vector <- function(
 
   if (length(class) == 1 && class == "integer") return(all(is_integer(x)))
 
-  return(class(x) %in% class)
+  return(inherits(x, class))
 }
 
 

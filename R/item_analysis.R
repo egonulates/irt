@@ -520,9 +520,9 @@ marginal_reliability_empirical <- function(ts_var = NULL, se = NULL,
                                            theta = NULL, ip = NULL)
 {
   if (!is.null(ts_var) && !is.null(se)) {
-    # See Kim (2012), Eqn. 17
+    # See Kim (2012) A Note on the Reliability Coefficients..., Eqn. 17
     # Green, Bock et al. Eqn. 7
-    return((ts_var - mean(se, na.rm = TRUE)^2) / ts_var)
+    return(1 - (mean(se^2, na.rm = TRUE) / ts_var))
   } else if (!is.null(theta) && !is.null(se)) {
     return(marginal_reliability_empirical(ts_var = var(theta, na.rm = TRUE),
                                           se =  se))
