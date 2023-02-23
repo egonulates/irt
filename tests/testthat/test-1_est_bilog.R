@@ -169,6 +169,19 @@ test_that("est_bilog", {
                          target_dir = "C:/Temp/Analysis", overwrite = TRUE),
                regexp = "Invalid item IDs.")
 
+  # -------------------------------------------------------------------------- #
+  # Fix error: when response data contains examinee ID variable or group
+  # variable that has a column name larger than 8 characters, but all item
+  # IDs are less than 8 characters, the function gives a false error.
+  true_theta <- rnorm(4000)
+  true_ip <- generate_ip(n = 30, model = "2PL")
+  resp <- sim_resp(true_ip, true_theta)
+  resp <- cbind.data.frame(examinee_id = paste0("s", 1:nrow(resp)), resp)
+
+  output <- est_bilog(x = resp, model = "2PL", examinee_id_var = "examinee_id",
+                      target_dir = "C:/Temp/Analysis", overwrite = TRUE)
+  expect_s3_class(output, "bilog_output")
+
 
   # -------------------------------------------------------------------------- #
   # # Compare 1PL with Rasch

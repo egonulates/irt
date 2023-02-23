@@ -1646,12 +1646,6 @@ est_bilog <- function(
     if (is.null(items)) {
       items <- colnames(x)
 
-      # Make sure 'items' is valid, i.e. each item is 8 character or less:
-      if (!is.null(items) && any(nchar(items) > 8)) {
-        stop("Invalid item IDs. Bilog-MG do not accept item IDs that are ",
-             "longer than eight characters.")
-      }
-
       # Make sure to remove examinee_id_var
       if (!is.null(examinee_id_var)) {
         if (examinee_id_var %in% items) {
@@ -1668,6 +1662,13 @@ est_bilog <- function(
           items <- items[-group_var]
         }
       }
+
+      # Make sure 'items' is valid, i.e. each item is 8 character or less:
+      if (!is.null(items) && any(nchar(items) > 8)) {
+        stop("Invalid item IDs. Bilog-MG do not accept item IDs that are ",
+             "longer than eight characters.")
+      }
+
     } else if (length(items) == 1 && items == "none") {
       items <- NULL
     }

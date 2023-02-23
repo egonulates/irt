@@ -6,4 +6,7 @@ test_that("dif", {
   resp <- sim_resp(ip = ip, theta = theta, prop_missing = .1)
   expect_true(is.data.frame(
     dif(resp = resp, group = group, focal_name = "M", ip = NULL, type = "mh")))
+
+  # -------------------------------------------------------------------------- #
+
 })
