@@ -72,8 +72,8 @@ bilog_create_datafile <- function(
     dir.create(path = target_dir, recursive = TRUE)
   if (!dir.exists(target_dir))
     stop(paste0("The directory for BILOG-MG data file cannot be created at: \n",
-                target_dir, "\nPlease create directory manually.",
-                call. = FALSE))
+                target_dir, "\nPlease create directory manually."),
+         call. = FALSE)
 
   # If x is Response_set, convert it to a data.frame and add examinee_id_var and
   # group_var

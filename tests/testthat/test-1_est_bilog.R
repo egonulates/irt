@@ -23,6 +23,7 @@ target_dir <- "C:/Temp/testthat-bilog"
 
 
 test_that("est_bilog", {
+  skip_on_cran()
   skip_if(skip_tests)
   skip_if_bilog_exe_not_found()
 
