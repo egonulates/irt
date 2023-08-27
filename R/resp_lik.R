@@ -59,9 +59,10 @@ setMethod(
     if (ip$model %in% c(UNIDIM_DICHO_MODELS, UNIDIM_POLY_MODELS)) {
       if (inherits(resp, 'integer')) {
         if (all(is.na(resp))) return(resp)
-        if (!all(is.na(resp) | resp %in% 0L:length(ip$b)))
+        max_scr <- max_score(ip)
+        if (!all(is.na(resp) | resp %in% 0L:max_scr))
           stop(paste0("\nInvalid response. Response should be ",
-                      "either: ", paste0(0L:length(ip$b), collapse = ", "),
+                      "either: ", paste0(0L:max_scr, collapse = ", "),
                       " or NA (i.e. missing)."))
         if (length(theta) == length(resp)) {
           return(resp_lik_item_cpp(resp = resp, theta = theta, item = ip))

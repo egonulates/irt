@@ -38,23 +38,29 @@ test_that("resp_lik - Item", {
 
   # ---------------------------------------------------------------------------#
   ##  GRM
-  ip <- item(a = rlnorm(1, 0, .3), b = sort(rnorm(3)))
+  ip <- item(a = rlnorm(1, 0, .3), b = sort(rnorm(sample(2:7, 1))),
+             model = "GRM")
   theta <- rnorm(1)
-  resp <- 1
-  expect_identical(resp_lik(ip = ip, resp = resp, theta = theta),
-                    prob(ip = ip, theta = theta)[resp + 1])
-  resp <- 2
+  resp <- sample(0L:max_score(ip), 1)
   expect_identical(resp_lik(ip = ip, resp = resp, theta = theta),
                     prob(ip = ip, theta = theta)[resp + 1])
 
   # ---------------------------------------------------------------------------#
   ##  GPCM
-  ip <- item(a = rlnorm(1, 0, .3), b = sort(rnorm(3)), model = "GPCM")
+  ip <- item(a = rlnorm(1, 0, .3), b = sort(rnorm(sample(2:7, 1))),
+             model = "GPCM")
   theta <- rnorm(1)
-  resp <- 1
+  resp <- sample(0L:max_score(ip), 1)
   expect_equal(resp_lik(ip = ip, resp = resp, theta = theta),
                prob(ip = ip, theta = theta)[resp + 1], tolerance = 1e-8)
-  resp <- 2
+
+
+  # ---------------------------------------------------------------------------#
+  ##  GPCM2
+  max_scr <- sample(2L:7L, 1)
+  ip <- generate_item(model = "GPCM2", n_categories = max_scr + 1)
+  theta <- rnorm(1)
+  resp <- sample(0L:max_score(ip), 1)
   expect_equal(resp_lik(ip = ip, resp = resp, theta = theta),
                prob(ip = ip, theta = theta)[resp + 1], tolerance = 1e-8)
 
