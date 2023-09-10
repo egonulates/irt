@@ -1,45 +1,165 @@
 
+#' Item Parameter Drift via D2
+#'
+#' @description
+#' This function evaluates item parameter drift using the approach described in
+#' Wells et al. (2014). It is designed for assessing item drift in dichotomous
+#' items.
+#' @param ip1 Itempool object representing the first calibration.
+#' @param ip2 Itempool object representing the second calibration.
+#' @param theta A numeric vector containing the quadrature points.
+#' @param weights A numeric vector containing the weights assigned to the
+#'   quadrature points. The length of this vector should match the length of the
+#'   \code{theta} argument.
+#' @param anchor_item_ids A character vector containing the IDs of anchor items.
+#'   If set to \code{NULL}, it is assumed that all items are considered anchor
+#'   items.
+#'
+
+#' @noRd
+#'
+#' @author Emre Gonulates
+#'
+#' @references
+#' Wells, C. S., Hambleton, R. K., Kirkpatrick, R., & Meng, Y. (2014).
+#' An examination of two procedures for identifying consequential item
+#' parameter drift. Applied Measurement in Education, 27, 214–231.
+#'
+#' @examples
+#' ip1 <- generate_ip(n = 20)
+#' ip2 <- ip1
+#' # add a small nuisance to item difficulty parameters
+#' ip2$b <- ip1$b + runif(20, -.5, .5)
+#'
+#' theta <- seq(-4, 4, 0.2)
+#' weights <- dnorm(theta)
+#' ipd_d2(ip1, ip2, theta = theta, weights = weights)
+#'
+#' ipd_d2(ip1, ip2, theta = theta, weights = weights,
+#'   anchor_item_ids = c("Item_2", "Item_6", "Item_9", "Item_13"))
+#'
+#' ### Polytomous items items
+#' n_item <- 30
+#' models <- sample(c("3PL", "GPCM2"), n_item, TRUE)
+#' new_ip <- generate_ip(model = models, D = 1.702)
+#' old_ip <- data.frame(new_ip)
+#' old_ip$a <- old_ip$a + round(runif(n_item, min = -.5, max = .5), 2)
+#' old_ip$b <- old_ip$b + round(runif(n_item, min = -.75, max = .75), 2)
+#' old_ip$d1 <- old_ip$d1 + round(runif(n_item, min = -.75, max = .75), 2)
+#' old_ip$d2 <- old_ip$d2 + round(runif(n_item, min = -.75, max = .75), 2)
+#' old_ip$d3 <- old_ip$d3 + round(runif(n_item, min = -.75, max = .75), 2)
+#' old_ip <- itempool(old_ip)
+#'
+#' ipd_d2(ip1 = old_ip, ip2 = new_ip, theta = theta, weights = weights)
+
+ipd_d2 <- function(ip1, ip2, theta = seq(-4, 4, 0.1),
+                   weights = dnorm(seq(-4, 4, 0.1)),
+                   anchor_item_ids = NULL) {
+  if (!is_atomic_vector(theta, "numeric")) {
+    stop("Invalid 'theta'. 'theta' should be a numeric vector.")
+  }
+  if (!is_atomic_vector(weights, "numeric") ||
+      length(weights) != length(theta)) {
+    stop("Invalid 'weights'. 'weights' should be a numeric vector that has ",
+         "the same length as 'theta' argument.")
+  }
+
+  # Check if anchor item ids is not null. If it is not, pull those items
+  if (!is.null(anchor_item_ids)) {
+    if (!is_atomic_vector(anchor_item_ids, "character"))  {
+      stop("Invalid 'anchor_item_ids'. 'anchor_item_ids' should be a ",
+           "character vector.")
+    }
+    # Check if anchor_item_ids appeared in both item pools. If not raise an
+    # error.
+    if (!all(anchor_item_ids %in% ip2$resp_id) ||
+        !all(anchor_item_ids %in% ip1$resp_id))
+      stop("All 'anchor_item_ids' should be in both ip2 and ip1.")
+    ip2 <- ip2[anchor_item_ids %in% ip2$resp_id]
+    ip1 <- ip1[anchor_item_ids %in% ip1$resp_id]
+  } else if (length(ip1) != length(ip2)) {
+    stop("The lengths of 'ip1' and 'ip2' are different. When ",
+         "'anchor_item_ids' are not specified, all items are assumed to ",
+         "be anchor items and the lenghts of ip1 and ip2 should be the same.")
+  } else if (all(ip1$resp_id %in% ip2$resp_id)) {
+    anchor_item_ids <- ip1$resp_id
+  } else {
+    warning("Item IDs of ip1 and ip2 differs. Item order within the item ",
+            "pool will be used for checking item parameter drift.")
+  }
+
+  weights <- weights/(sum(weights))
+
+  d2 <- function(item1, item2, theta, weights) {
+    p1 <- mean(item1, theta = theta)
+    p2 <- mean(item2, theta = theta)
+    return(sum(weights * (p1 - p2)^2))
+  }
+  ip1 <- flatten_itempool_cpp(ip1)
+  ip2 <- flatten_itempool_cpp(ip2)
+  result <- c()
+  if (is.null(anchor_item_ids)) {
+    for (i in seq_len(length(ip1))) {
+      result <- c(result, d2(item1 = ip1[[i]], item2 = ip2[[i]], theta = theta,
+                             weights = weights))
+    }
+    result <- setNames(result, names(ip1))
+  } else {
+    for (item_id in anchor_item_ids) {
+      result <- c(result, d2(item1 = ip1[[item_id]], item2 = ip2[[item_id]],
+                             theta = theta, weights = weights))
+
+    }
+    result <- setNames(result, anchor_item_ids)
+  }
+  return(result)
+}
+
+
 #' Item Parameter Drift
 #'
-#' @description This function detects the unstable (i.e. items whose item
-#'   parameter values drifted) for a given two sets of items.
+#' @description
+#' This function identifies items that have become unstable, meaning their
+#' item parameter values have shifted, within two specified sets of items.
 #'
-#' @param ip1 Itempool object for the first calibration.
-#' @param ip2 Itempool object for the second calibration.
-#' @param method The method of item parameter drift analysis.
-#' @param anchor_item_ids Anchor item ids. If \code{NULL}, all items are
-#'   assumed to be anchor items.
-#' @param alpha Two tailed critical value to detect the unstable items. For
-#'   example if \deqn{alpha = 0.05}, the critical value is calculated using
-#'   \code{qnorm(1-alpha/2)} (= 1.96). Items whose absolute robust z values
-#'   are larger than this number will be flagged as unstable.
-#'
+#' @param ip1 An Itempool object for the first calibration.
+#' @param ip2 An Itempool object for the second calibration.
+#' @param method The method for analyzing item parameter drift.
 #'   \describe{
-#'     \item{"robust-z"}{Robust-Z method based on the Huynh and Meyer (2010). }
+#'     \item{"robust-z"}{Robust-Z method based on the Huynh and Meyer (2010).}
 #'   }
+#' @param anchor_item_ids A character vector containing the IDs of anchor
+#'   items. If set to \code{NULL}, it is assumed that all items are
+#'   considered anchor items.
+#' @param alpha A numeric value ranging from 0 to 1. The two-tailed critical
+#'   value is employed to identify unstable items. For instance, if we calculate
+#'   the critical value using \code{qnorm(1-alpha/2)} (which equals 1.96 when
+#'   \eqn{alpha = 0.05}), items with absolute robust-z values exceeding this
+#'   threshold will be marked as unstable.
+#'
 #'
 #' @return Return a list depending on the method:
 #'   \describe{
 #'     \item{robust-z}{
 #'       \describe{
-#'         \item{\code{output$a$cor}}{Correlation between two $a$ parameter
-#'           sets.}
+#'         \item{\code{output$a$cor}}{Correlation between two sets of \eqn{a}
+#'           parameters.}
 #'         \item{\code{output$a$sd_ratio}}{The ratio of the standard deviation
 #'           of \code{ip2} to the standard deviation of \code{ip1}.}
 #'         \item{\code{output$a$robust_z}}{Robust-z statistic values for each
-#'           item discrimination parameter.}
-#'         \item{\code{output$a$unstable}}{Item ID's which were flagged if
-#'           robust z statistic value for a parameters is larger than the
-#'           absolute value of  the critical value
-#'           (i.e. \code{qnorm(1-alphe/2)}).}
+#'           item's discrimination parameter.}
+#'         \item{\code{output$a$unstable}}{Item IDs that were flagged when the
+#'           robust-z statistic value for \eqn{a} parameters exceeded the
+#'           absolute value of the critical value
+#'           (i.e., \code{qnorm(1-alpha/2)}).}
 #'         \item{\code{output$b$robust_z}}{Robust-z statistic values for each
-#'           item difficulty or threshold parameter. If an item has threshold
-#'           parameters, robust z statistic will be calculated for each
-#'           threshold.}
-#'         \item{\code{output$b$unstable}}{Item ID's which were flagged if
-#'           robust z statistic for difficulty/threshold parameters are larger
-#'           than the absolute value of the critical value (i.e.
-#'           \code{qnorm(1-alphe/2)}).}
+#'           item's difficulty or threshold parameter. If an item has multiple
+#'           threshold parameters, robust z statistics will be calculated for
+#'           each one.}
+#'         \item{\code{output$b$unstable}}{Item IDs that were flagged if the
+#'           robust-z statistic for difficulty/threshold parameters exceeded
+#'           the absolute value of the critical value
+#'           (i.e., \code{qnorm(1-alpha/2)}).}
 #'       }
 #'     }
 #'   }

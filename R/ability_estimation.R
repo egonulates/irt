@@ -7,107 +7,103 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#' Estimate Ability of Examinees
+
+#' Estimate Examinee Ability
 #'
 #' @description
-#' \code{est_ability} estimates ability using various methods such as
+#' This function estimates examinee ability using different methods, including
 #' Owen's Bayesian estimation, Maximum Likelihood estimation,
-#' Expected-a-Posteriori.
+#' Maximum-a-Posteriori and Expected-a-Posteriori.
 #'
 #' @param resp A \code{\link{Response_set-class}}, \code{matrix} or a
-#'   \code{data.frame} object that holds responses. If there are missing
-#'   responses, they will not be included in the ability estimation.
+#'   \code{data.frame} object holding responses. Missing responses are excluded
+#'   from the ability estimation.
 #' @param ip An \code{\link{Item-class}}, \code{\link{Itempool-class}} or a
-#'   \code{\link{Testlet-class}} object. The default value is \code{NULL}. If
-#'   the value is \code{NULL}, \code{resp} should be a
-#'   \code{\link{Response_set-class}} object with a valid
-#'   \code{\link{Itempool-class}}.
-#' @param method The method that will be used to estimate the ability.
-#'   The default value is \code{"eap"}.
+#'   \code{\link{Testlet-class}} object. If \code{ip} is not an
+#'   \code{\link{Itempool-class}} object, the function attempts to convert it.
+#'   While the default is \code{NULL}, this argument is required for all methods
+#'   except when \code{method = "sum_score"}.
+#' @param method The method used for ability estimation. The default is
+#'   \code{"eap"}.
 #'
-#'   Current methods are:
+#'   Available methods:
 #'   \describe{
-#'     \item{\strong{\code{'sum_score'}}}{Basic sum (raw) score of
-#'       responses.}
+#'     \item{\strong{\code{'sum_score'}}}{Basic sum (raw) score of responses.}
 #'     \item{\strong{\code{'owen'}}}{Owen's Bayesian Ability Estimation.
 #'
-#'       This estimation method can be used only for dichotomous IRT
-#'       models, 'Rasch', '1PL', '2PL', '3PL' and '4PL'. Testlets groupings
-#'       will be ignored and items within testlets will be treated as if they
-#'       are standalone items.
+#'       This method is suitable for dichotomous IRT models (e.g., 'Rasch',
+#'       '1PL', '2PL', '3PL' and '4PL'). Testlet groupings are ignored and items
+#'       within testlets are treated as standalone items.
 #'
-#'       Formulas were implemented in Owen (1975) and Vale (1977).  Original
-#'       formulation does not contain D parameter. If \code{D = 1} original
-#'       solution will be obtained. If \code{D = 1.7} the \code{a} parameter
-#'       will be multiplied with this number.
+#'       Formulas were implemented in Owen (1975) and Vale (1977). The original
+#'       formulation does not include the D parameter. If \code{D = 1}, the
+#'       original solution is obtained. If \code{D = 1.7}, the \code{a}
+#'       parameter is multiplied by this number.
 #'
-#'       User needs to supply prior parameters, i.e. \code{prior_pars}. Prior
-#'       parameters should be a numeric vector of length two. The first
-#'       component is prior mean and the second component is prior standard
-#'       deviation (note that it is NOT prior variance). So, for example,
-#'       if the prior mean is 0.1 and prior variance is 4, set the prior
-#'       parameters as \code{prior_pars = c(0.1, 2)}.
-#'       }
+#'       The user needs to provide prior parameters, i.e., \code{prior_pars}.
+#'       These should be a numeric vector of length two, with the first
+#'       component as the prior mean and the second as the prior standard
+#'       deviation (not variance). For example, if the prior mean is 0.1 and the
+#'       prior standard deviation is 2, set the prior parameters as
+#'       \code{prior_pars = c(0.1, 2)}.
+#'
 #'     \item{\strong{\code{'ml'}}}{Maximum Likelihood Ability Estimation
-#'       via Newton-Raphson Algorithm}
-#'     \item{\strong{\code{'eap'}}}{Expected-a-Posteriori Ability
-#'       Estimation}
-#'     \item{\strong{\code{'map'} or \code{'bm'}}}{Maximum-a-Posteriori Ability
-#'       Estimation (or Bayes Modal estimation.) Prior information must be
-#'       provided for this function. Currently only \code{'norm'} prior
-#'       distribution is available.
-#'       }
+#'       via Newton-Raphson Algorithm.}
+#'     \item{\strong{\code{'eap'}}}{Expected-a-Posteriori Ability Estimation.
+#'       Prior information must be provided for this function. The number of
+#'       quadrature points can also be specified using the argument
+#'       \code{number_of_quads}. }
+#'     \item{\strong{\code{'map'}} or \strong{\code{'bm'}}}{Maximum-a-Posteriori
+#'       Ability Estimation (or Bayes Modal estimation). Prior information must
+#'       be provided for this function. Currently, only \code{'norm'} prior
+#'       distribution is available.}
 #'   }
-#' @param ... Additional arguments passed to specific methods
-#' @param prior_dist The shape of the prior distribution. Currently following
-#'          distributions can be specified:
-#'          \describe{
-#'            \item{'norm'}{Normal distribution}
-#'            \item{'unif'}{Uniform distribution}
-#'            \item{'t'}{t distribution}
-#'            \item{'cauchy'}{Cauchy distribution}
-#'          }
-#'          Default value is \code{'norm'}.
+#' @param ... Additional arguments passed to specific methods.
+#' @param prior_dist The shape of the prior distribution. Available options are:
+#'   \describe{
+#'     \item{'norm'}{Normal distribution}
+#'     \item{'unif'}{Uniform distribution}
+#'     \item{'t'}{t distribution}
+#'     \item{'cauchy'}{Cauchy distribution}
+#'   }
+#'   The default value is \code{'norm'}.
 #' @param prior_pars Parameters of the prior distribution. Default value is
-#'   \code{c(0, 1)} where 0 is the mean and 1 is the standard deviation of the
-#'   default prior distribution which is normal distribution. Also, for example,
-#'   uniform prior parameter can be set as \code{c(a, b)} where \code{a} is the
-#'   minimum value and \code{b} is the maximum value. For \code{t} distribution,
-#'   prior parameter can be set as \code{df} to represent the degree of freedom.
-#'   For Cauchy distribution, prior parameters can be set as \code{c(location,
-#'   scale)}.
+#'   \code{c(0, 1)}, where 0 is the mean and 1 is the standard deviation of the
+#'   default normal prior distribution. For example, uniform prior parameter can
+#'   be set as \code{c(a, b)} where \code{a} is the minimum value and \code{b}
+#'   is the maximum value. For \code{t} distribution, prior parameter can be set
+#'   as \code{df} to represent the degree of freedom. For Cauchy distribution,
+#'   prior parameters can be set as \code{c(location, scale)}.
 #'
 #'   If method is \code{"owen"}, provide \code{c(<Prior Mean>, <Prior SD>)}.
 #'
 #' @param theta_range The limits of the ability estimation scale. The estimation
-#'   result will be limited to this interval. The default is \code{c(-5, 5)}.
+#'   result will be bounded within this interval. Default is \code{c(-5, 5)}.
 #' @param number_of_quads Number of quadratures. The default value is 41. As
 #'   this number increases, the precision of the estimate will also increase.
-#'   The default value is \code{41}.
 #' @param tol The precision level of ability estimate. The final ability
-#'   estimates will be rounded to remove the precision that is smaller than the
-#'   \code{tol} value. The default value is \code{1e-06}.
-#' @param output_type A string that specifies the output type of the function.
-#'   The default value is \code{"list"}.
-#'   Available options are:
+#'   estimates will be rounded to remove precision smaller than the \code{tol}
+#'   value. Default is \code{1e-06}.
+#' @param output_type A string specifying the output type of the function.
+#'   Default is \code{"list"}. Options include:
 #'   \describe{
 #'     \item{"list"}{Function returns a \code{list} object with elements
 #'       \code{est} and \code{se}.}
 #'     \item{"data.frame"}{Function returns a \code{data.frame} object with
-#'       columns \code{examinee_id}, \code{est} and \code{se}}
+#'       columns \code{examinee_id}, \code{est} and \code{se}.}
 #'     \item{"tibble"}{If the \code{tibble} package is available, the function
-#'           returns a \code{tibble} object with columns \code{examinee_id},
-#'           \code{est} and \code{se}.}
+#'       returns a \code{tibble} object with columns \code{examinee_id},
+#'       \code{est} and \code{se}.}
 #'   }
 #'
-#'
-#' @return \code{est} The ability estimated. If the response vector for a
-#'   subject contains all \code{NA}s, then, in order to differentiate all
-#'   incorrect and all NA, the \code{est} returned will be NA.
-#' @return \code{se} The standard error(s) of the ability estimate(s). For
-#'   \code{"sum_score"} method, all of the standard errors will be \code{NA}.
-#'   For Bayesian methods (like EAP or Owen's) this value is the square root
+#' @return \code{est} The estimated examinee abilities. If the response vector
+#'   for a subject contains all \code{NA}s, then \code{est} will be \code{NA} to
+#'   differentiate from cases where all answers are incorrect.
+#' @return \code{se} The standard errors of the ability estimates. For
+#'   \code{"sum_score"} method, all standard errors will be \code{NA}. For
+#'   Bayesian methods (like EAP, MAP or Owen's), this value is the square root
 #'   of the posterior variance.
+#'
 #'
 #' @author Emre Gonulates
 #' @export
