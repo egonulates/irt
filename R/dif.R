@@ -1,4 +1,109 @@
 
+
+#' check "group" argument of DIF function
+#'
+#' @description This function checks the 'group' and 'focal_name' arguments of
+#'   the DIF functions.
+#'   It does the following:
+#'   * Convert the \code{resp} to a data.frame object, if it is matrix or
+#'     Resp_set object.
+#'     - Check whether it is data.frame or matrix.
+#'   * Check \code{group} argument:
+#'     - It can be a column of the \code{resp} data.frame
+#'     - It can be a vector. If so, check whether it has the same length of
+#'       the number of rows of the \code{resp}.
+#'     - Add this grouping variable to the response data.
+#'   * Check \code{focal_name} argument.
+#'     - Make sure it is one of the elements of the grouping variable.
+#'     - All of the other values will be marked as "Reference Group"
+#'
+#' @noRd
+#'
+dif_helper_group_name <- function(resp, group, focal_name) {
+  # Convert the resp to data frame.
+
+}
+
+
+###############################################################################@
+############################# dif_mh_dich ######################################
+###############################################################################@
+#' Calculate DIF for Dichotomous items Using Mantel–Haenszel
+#'
+#' @param resp A response matrix, \code{Response_set} object, data frame that
+#'   contains examinee response, group variable (optional), criterion
+#'   variable (optional). Rows are assumed to be examinees and columns are for
+#'   items if it is a matrix or data.frame.
+#' @param group It can be (a) a string representing column of \code{resp} that
+#'   is holding the grouping variable, (b) A vector of values with the same
+#'   length as the number of rows of \code{resp}.
+#' @param focal_name A single value that represents the focal group. It should
+#'   be one of the values of the grouping variable. All of the other values
+#'   within the grouping variable will be assumed to be in the reference group.
+#'
+#'
+#' @noRd
+dif_mh_dich <- function(resp, group, focal_name) {
+  result <- data.frame(item_id = paste0("Item", 1:ncol(resp)),
+                       mh_statistic = NA, chisq = NA, p_value = NA,
+                       ETS = NA, ETS_class = NA)
+  if (!is.null(colnames(resp))) result$item_id <- colnames(resp)
+  total_score <- rowSums(resp, na.rm = TRUE)
+  K <- sort(unique(total_score))
+  group[group == focal_name] <- "focal"
+  group[group != "focal"] <- "reference"
+  group <- as.factor(group)
+
+  for (itm in seq_len(ncol(resp))) { # itm = item
+    n_r1 <- rep(NA, length(K))
+    n_r0 <- rep(NA, length(K))
+    n_f1 <- rep(NA, length(K))
+    n_f0 <- rep(NA, length(K))
+    n_r <- rep(NA, length(K))
+    n_f <- rep(NA, length(K))
+    n_0 <- rep(NA, length(K))
+    n_1 <- rep(NA, length(K))
+    n <- rep(NA, length(K))
+    for (k in seq_len(length(K))) {
+      temp <- which(total_score == K[k])
+      temp_resp <- factor(resp[temp, itm], levels = unique(resp[, itm]))
+      temp <- stats::addmargins(table(group[temp], temp_resp))
+      # Number of examinees in the reference group with correct responses
+      n_r1[k] <- temp["reference", "1"]
+      # Number of examinees in the reference group with incorrect responses
+      n_r0[k] <- temp["reference", "0"]
+      # Number of examinees in the focal group with correct responses
+      n_f1[k] <- temp["focal", "1"]
+      # Number of examinees in the focal group with incorrect responses
+      n_f0[k] <- temp["focal", "0"]
+      # Total number of examinees in the reference group
+      n_r[k] <- temp["reference", "Sum"]
+      # Total number of examinees in the focal group
+      n_f[k] <- temp["focal", "Sum"]
+      # Total number of incorrect responses
+      n_0[k] <- temp["Sum", "0"]
+      # Total number of correct responses
+      n_1[k] <- temp["Sum", "1"]
+      # Total number of responses
+      n[k] <- temp["Sum", "Sum"]
+    }
+    valid <- n > 1
+    alpha_mh <- sum((n_r1 * n_f0)/n) / sum((n_r0 * n_f1)/n)
+    mu <- ((n_r * n_1) / n)[valid]
+    v <- (n_r * n_f * n_1 * n_0 / (n^2*(n - 1)))[valid]
+    result$mh_statistic[itm] <- sum((n_r1 * n_f0 / n)[valid]) /
+      sum((n_r0 * n_f1 / n)[valid])
+    result$chisq[itm] <- (abs(sum(n_r1[valid]) - sum(mu)) - 0.5)^2 / sum(v)
+  }
+  result$ETS <- -2.35 * log(result$mh_statistic)
+  result$p_value <- 1 - stats::pchisq(q = result$chisq, df = 1)
+  result$ETS_class <- ifelse(abs(result$ETS) < 1, "A",
+                             ifelse(abs(result$ETS) < 1.5, "B", "C"))
+}
+
+
+
+
 ###############################################################################@
 ############################# dif ##############################################
 ###############################################################################@
@@ -8,7 +113,7 @@
 #' \code{dif} evaluates Differential Item Functioning (DIF) of a test.
 #'
 #'
-#' @param resp A vector of item responses.
+#' @param resp A matrix of item responses.
 #' @param group Group membership
 #' @param focal_name In the group variable, the value that represents the focal
 #'   group.
@@ -27,7 +132,7 @@
 #'
 #'
 dif <- function(resp, group, focal_name, ip = NULL, type = "mh") {
-  type <- match.arg(type)
+  type <- tolower(match.arg(type))
   if (type == "mh") {
     result <- data.frame(item_id = paste0("Item", 1:ncol(resp)), mh_statistic = NA,
                          chisq = NA, p_value = NA, ETS = NA, ETS_class = NA)
