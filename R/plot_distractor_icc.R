@@ -266,12 +266,12 @@ plot_distractor_icc <- function(raw_resp, item, key = NULL,
 
   ### ggplot2 ###
   if (!base_r_graph && requireNamespace("ggplot2", quietly = TRUE)) {
-    p <- ggplot2::ggplot(gd, ggplot2::aes_string(x = "bin", y = "Freq",
-                                                 color = "Response")) +
+    p <- ggplot2::ggplot(gd, ggplot2::aes(x = .data$bin, y = .data$Freq,
+                                          color = .data$Response)) +
       ggplot2::geom_point(alpha = 0.5, size = 2) +
-      ggplot2::geom_line(ggplot2::aes_string(linetype = "Response",
-                                             group = "Response"),
-                size = 1, alpha = 0.75, ...)  +
+      ggplot2::geom_line(ggplot2::aes(linetype = .data$Response,
+                                      group = .data$Response),
+                linewidth = 1, alpha = 0.75, ...)  +
       ggplot2::scale_linetype_manual(values = line_types, name = "Response") +
       ggplot2::scale_color_manual(values = resp_colors, name = "Response")
         # guide = "none",
@@ -289,8 +289,8 @@ plot_distractor_icc <- function(raw_resp, item, key = NULL,
     if (add_icc) {
       p <- p + ggplot2::geom_line(
         data = icc_data,
-        mapping = ggplot2::aes_string(x = "criterion", y = "p"),
-        color = "red", alpha = .5, size = 1)
+        mapping = ggplot2::aes(x = .data$criterion, y = .data$p),
+        color = "red", alpha = .5, linewidth = 1)
     }
 
     p <- p +

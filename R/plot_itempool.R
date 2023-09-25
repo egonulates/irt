@@ -138,7 +138,7 @@ plot_itempool_tcc <- function(ip,
                                    tcc_prop_corr = tcc_prop_corr)
   ### ggplot2 ###
   if (!base_r_graph && requireNamespace("ggplot2", quietly = TRUE)) {
-    p <- ggplot2::ggplot(data = gd, ggplot2::aes_string(x = "theta", y = "p")) +
+    p <- ggplot2::ggplot(data = gd, ggplot2::aes(x = .data$theta, y = .data$p)) +
       ggplot2::geom_line(...) +
       ggplot2::labs(x = x_label, y = y_label, title = title) +
       ggplot2::ylim(y_lim)
@@ -250,17 +250,17 @@ plot_itempool_icc <- function(ip,
     if (is.null(focus_item)) {
       p <- ggplot2::ggplot(
         data = gd,
-        ggplot2::aes_string(x = "theta", y = "p", color = "item_id")) +
+        ggplot2::aes(x = .data$theta, y = .data$p, color = .data$item_id)) +
         ggplot2::geom_line()
     } else {
       p <- ggplot2::ggplot() +
         ggplot2::geom_line(
           data = gd[!gd$item_id %in% focus_item, ],
-          ggplot2::aes_string(x = "theta", y = "p", group = "item_id"),
+          ggplot2::aes(x = .data$theta, y = .data$p, group = .data$item_id),
           alpha = .4, color = "tomato1") +
         ggplot2::geom_line(
           data = gd[gd$item_id %in% focus_item, ],
-          ggplot2::aes_string(x = "theta", y = "p", group = "item_id"),
+          ggplot2::aes(x = .data$theta, y = .data$p, group = .data$item_id),
           color = "black")
     }
     p <- p +
@@ -391,19 +391,19 @@ plot_itempool_pars <- function(ip,
   if (!base_r_graph && requireNamespace("ggplot2", quietly = TRUE)) {
     p <- ggplot2::ggplot() +
       ggplot2::geom_boxplot(data = ip_df,
-                            mapping = ggplot2::aes_string(x = "value"),
+                            mapping = ggplot2::aes(x = .data$value),
                             # outlier.shape = NA,
                             outlier.alpha = 0, color = "blue", size = 1) +
 
       ggplot2::geom_dotplot(
-        data = ip_df, mapping = ggplot2::aes_string(x = "value"),
+        data = ip_df, mapping = ggplot2::aes(x = .data$value),
         binaxis = 'x', binpositions = "all", stackdir = 'centerwhole',
         method = "histodot", dotsize = ifelse("dotsize" %in% names(args),
                                               args$dotsize, 1), alpha = .4)
     if (!is.null(focus_item))
       p <- p +
         ggplot2::geom_point(data = ip_df[ip_df$item_id == focus_item, ],
-                            mapping = ggplot2::aes_string(x = "value", y = 0),
+                            mapping = ggplot2::aes(x = .data$value, y = 0),
                             size = 4, color = "red", shape = 18)
 
     if (multi_model) {
@@ -481,7 +481,7 @@ plot_itempool_hist <- function(ip,
   if (!base_r_graph && requireNamespace("ggplot2", quietly = TRUE)) {
     p <- ggplot2::ggplot() +
       ggplot2::geom_histogram(data = ip_df,
-                              mapping = ggplot2::aes_string(x = "value"),
+                              mapping = ggplot2::aes(x = .data$value),
                               bins = 25, color = "black", fill = "gray")
     if (multi_model) {
       p <- p + ggplot2::facet_wrap(~model + par_name, scales = "free")
@@ -824,8 +824,8 @@ plot.Itempool <- function(x,
 #'       infoData$information <- infoData$information/expansion_ratio
 #'
 #'       # https://stackoverflow.com/q/3099219/2275286
-#'       p <- p + ggplot2::geom_line(data = infoData, ggplot2::aes_string(
-#'         x = 'theta', y = 'information',
+#'       p <- p + ggplot2::geom_line(data = infoData, ggplot2::aes(
+#'         x = .data$theta, y = .data$information,
 #'         color = switch(separateContent + 1, NULL, "content")), size = 1) +
 #'         scale_y_continuous(name = "Count", sec.axis = sec_axis(
 #'           ~.*expansion_ratio, name = "Item Pool Information")) +

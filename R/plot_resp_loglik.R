@@ -111,8 +111,8 @@ plot_resp_loglik <- function(ip, resp, theta_range = c(-5,5), title = "",
   y_label <- ifelse(likelihood, "Likelihood", "Log-Likelihood")
   ### ggplot2 ###
   if (!base_r_graph && requireNamespace("ggplot2", quietly = TRUE)) {
-    p <- ggplot2::ggplot(gd, ggplot2::aes_string(x = 'theta', y = 'value')) +
-      ggplot2::geom_line(size = 1, color = "blue") +
+    p <- ggplot2::ggplot(gd, ggplot2::aes(x = .data$theta, y = .data$value)) +
+      ggplot2::geom_line(linewidth = 1, color = "blue") +
       ggplot2::labs(x = x_label, y = y_label, title = title)
     if (show_estimate)
       p <- p + ggplot2::geom_vline(xintercept = xIntercept,

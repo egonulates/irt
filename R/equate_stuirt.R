@@ -411,7 +411,6 @@ stuirt_read_output <- function(output_path) {
 #'       \item{RN}{mean, std}
 #'       \item{RU}{lower-limit, upper-limit}
 #'       \item{ED}{starting, ending}
-#'       \item{}{}
 #'     }
 #'     }
 #'   }

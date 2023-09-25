@@ -119,7 +119,7 @@ plot.Item <- function(x, theta_range = c(-4,4), title = "",
 
       p <- ggplot2::ggplot(
         data = icc,
-        ggplot2::aes_string(x = 'theta', y = 'p', color = 'Category')) +
+        ggplot2::aes(x = .data$theta, y = .data$p, color = .data$Category)) +
         # Do not show legend if legend_title is NULL
         ggplot2::geom_line(..., show.legend = !is.null(category_names)) +
         ggplot2::labs(x = x_label, y = y_label, title = title) +
@@ -135,7 +135,7 @@ plot.Item <- function(x, theta_range = c(-4,4), title = "",
     } else if (x$model %in% UNIDIM_DICHO_MODELS) {
       # If there is only one item do not print out the legend
       p <- ggplot2::ggplot(data = icc,
-                           ggplot2::aes_string(x = "theta", y = "p")) +
+                           ggplot2::aes(x = .data$theta, y = .data$p)) +
         ggplot2::geom_line(...) +
         ggplot2::labs(x = x_label, y = y_label, title = title) +
         ggplot2::ylim(y_lim) +

@@ -317,7 +317,7 @@ test_that("plot_empirical_icc2", {
 
   # Add arguments for 'geom_line'
   expect_silent(p <- plot_empirical_icc2(resp, item = 4, binwidth = .2, ip = ip,
-                                         theta = true_theta, size = 1,
+                                         theta = true_theta, linewidth = 1,
                                          alpha = .25, suppress_plot = TRUE))
   expect_s3_class(p, 'ggplot'); rm(p)
 

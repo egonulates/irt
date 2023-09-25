@@ -152,12 +152,13 @@ plot.cat_output <- function(x,
 
     p <- ggplot2::ggplot(
       co_summary,
-      ggplot2::aes_string(x = "item_no", y = "est",  group = NA)) +
+      ggplot2::aes(x = .data$item_no, y = .data$est,  group = NA)) +
       ggplot2::geom_segment(
         data = segment_df,
-        ggplot2::aes_string(x = "x", y = "y", xend = "xend", yend = "yend",
-                            color = "resp"), linetype = "solid") +
-      ggplot2::geom_point(ggplot2::aes_string(color = "resp"), size = 2.5)
+        ggplot2::aes(x = .data$x, y = .data$y, xend = .data$xend,
+                     yend = .data$yend, color = .data$resp),
+        linetype = "solid") +
+      ggplot2::geom_point(ggplot2::aes(color = .data$resp), size = 2.5)
     # Standard Error Band
     if (se_band) {
       se_df <- co_summary[-1, c("item_no", "est", "se")]
@@ -165,7 +166,7 @@ plot.cat_output <- function(x,
       se_df$ymax <- se_df$est + se_df$se
       p <- p +
         ggplot2::geom_ribbon(data = se_df,
-                             ggplot2::aes_string(ymin = "ymin", ymax = "ymax"),
+                             ggplot2::aes(ymin = .data$ymin, ymax = .data$ymax),
                              alpha = .2)
     }
 
@@ -176,7 +177,7 @@ plot.cat_output <- function(x,
       p <- p +
         ggplot2::geom_text(
           data = b_df,
-          ggplot2::aes_string(x = "item_no", y = "b", label = "label"),
+          ggplot2::aes(x = .data$item_no, y = .data$b, label = .data$label),
           color = "blue", size = 3)
     }
 
@@ -185,7 +186,7 @@ plot.cat_output <- function(x,
       ggplot2::geom_point(
         data = data.frame(x = utils::tail(co_summary$item_no, 1),
                           y = utils::tail(co_summary$est, 1)),
-        ggplot2::aes_string(x = "x", y = "y"), color = "black", shape = 15,
+        ggplot2::aes(x = .data$x, y = .data$y), color = "black", shape = 15,
         size = 3)
 
     # Horizontal Lines
@@ -197,9 +198,8 @@ plot.cat_output <- function(x,
           p <- p +
             ggplot2::geom_hline(
               data = temp,
-              ggplot2::aes_string(yintercept= "yint",
-                                  linetype = "temp2"),
-              size = .25, color = "black")
+              ggplot2::aes(yintercept = .data$yint, linetype = temp2),
+              linewidth = .25, color = "black")
 
         } else if (hl == "final_theta") {
           temp <- data.frame(yint = utils::tail(co_summary$est, 1))
@@ -207,8 +207,8 @@ plot.cat_output <- function(x,
           p <- p +
             ggplot2::geom_hline(
               data = temp,
-              ggplot2::aes_string(yintercept= "yint", linetype = "temp2"),
-              size = .25, color = "cyan")
+              ggplot2::aes(yintercept= .data$yint, linetype = temp2),
+              linewidth = .25, color = "cyan")
         }
       }
 

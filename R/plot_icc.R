@@ -5,7 +5,8 @@
 #' Get item ID and item column number using response matrix and 'item'
 #' information.
 #' 'item' argument should be either (1) a single string representing
-#' the item's ID or (2) a single integer representing the column number.
+#' the item's ID or (2) a single integer representing the column number
+#' (3)
 #'
 #' @noRd
 get_item_id_col_num <- function(resp, item, ip = NULL) {
@@ -236,26 +237,27 @@ plot_empirical_icc <- function(resp, item, ip, theta = NULL, bins = 10,
   ### ggplot2 ###
   if (!base_r_graph && requireNamespace("ggplot2", quietly = TRUE)) {
     if (length(unique(gd$Response)) > 2) {
-      p <- ggplot2::ggplot(gd, ggplot2::aes_string(
-        x = "bin", y = "pvalue", color = "Response", linetype = "Type",
-        group = "interaction(Type, Response)")) +
+      p <- ggplot2::ggplot(gd, ggplot2::aes(
+        x = .data$bin, y = .data$pvalue, color = .data$Response,
+        linetype = .data$Type,
+        group = interaction(.data$Type, .data$Response))) +
         ggplot2::geom_point(
           data = gd[gd$Type == "Observed", ],
-          mapping = ggplot2::aes_string(
-            size = switch(is.null(binwidth) + 1, "total_freq",  NULL)),
+          mapping = ggplot2::aes(
+            size = switch(is.null(binwidth) + 1, .data$total_freq,  NULL)),
           alpha = .5) +
         ggplot2::geom_line(...)
     } else {
-      p <- ggplot2::ggplot(gd, ggplot2::aes_string(x = "bin", y = "pvalue",
-                                                   color = "Type")) +
+      p <- ggplot2::ggplot(gd, ggplot2::aes(x = .data$bin, y = .data$pvalue,
+                                            color = .data$Type)) +
         ggplot2::geom_point(
           data = gd[gd$Type == "Observed", ],
-          mapping = ggplot2::aes_string(
-            x = "bin", y = "pvalue",
-            size = switch(is.null(binwidth) + 1, "total_freq",  NULL),
+          mapping = ggplot2::aes(
+            x = .data$bin, y = .data$pvalue,
+            size = switch(is.null(binwidth) + 1, .data$total_freq,  NULL),
             group = "Type"),
           alpha = .5) +
-        ggplot2::geom_line(ggplot2::aes_string(group = "Type"), ...)
+        ggplot2::geom_line(ggplot2::aes(group = .data$Type), ...)
     }
 
     p <- p +
@@ -461,8 +463,10 @@ get_data_plot_empirical_icc2 <- function(resp, item, bins = 10,
     gd <- gd[!is.nan(gd$Observed), ]
 
     if (is(ip, "Itempool")) {
+      temp_ip <- flatten_itempool_cpp(ip)
+      temp_itm <- temp_ip[[item$item_id]]
       gd$Expected <- resp_lik(
-        ip = ip[[item$col_num]],
+        ip = temp_itm,
         resp = as.integer(as.character(gd$Response)),
         theta = as.numeric(as.character(gd$bin)))
       gd <- stats::reshape(
@@ -570,6 +574,11 @@ plot_empirical_icc2 <- function(resp, item, bins = 10, binwidth = NULL,
     stop("This function requires 'ggplot2' package. Please install it using ",
          "'install.packages(\"ggplot2\")'")
   }
+
+  if (inherits(resp, "Response_set")) {
+    resp <- as.matrix(resp)
+  }
+
   gd <- get_data_plot_empirical_icc2(resp = resp, item = item, bins = bins,
                                      binwidth = binwidth, ip = ip,
                                      x_axis_scale = x_axis_scale, theta = theta)
@@ -582,43 +591,43 @@ plot_empirical_icc2 <- function(resp, item, bins = 10, binwidth = NULL,
 
   if (is.null(binwidth)) {
     if (length(unique(gd$Response)) > 1) {
-      p <- ggplot2::ggplot(gd, ggplot2::aes_string(
-        x = x_axis_scale, y = "Observed", color = "Response")) +
+      p <- ggplot2::ggplot(gd, ggplot2::aes(
+        x = .data[[x_axis_scale]], y = .data$Observed, color = .data$Response)) +
         ggplot2::geom_point(size = 2) +
-        ggplot2::geom_line(ggplot2::aes_string(group = "Response"), ...)
+        ggplot2::geom_line(ggplot2::aes(group = .data$Response), ...)
     } else {
-      p <- ggplot2::ggplot(gd, ggplot2::aes_string(
-        x = x_axis_scale, y = "Observed", group = 1)) +
+      p <- ggplot2::ggplot(gd, ggplot2::aes(
+        x = .data[[x_axis_scale]], y = .data$Observed, group = 1)) +
         ggplot2::geom_point(size = 2) +
         ggplot2::geom_line(...)
     }
   } else {
     if (is(ip, "Itempool")) {
       if (length(unique(gd$Response)) > 2) {
-        p <- ggplot2::ggplot(gd, ggplot2::aes_string(
-          x = x_axis_scale, y = "pvalue", color = "Response",
-          linetype = "Type")) +
+        p <- ggplot2::ggplot(gd, ggplot2::aes(
+          x = .data[[x_axis_scale]], y = .data$pvalue, color = .data$Response,
+          linetype = .data$Type)) +
           ggplot2::geom_point(data = gd[gd$Type == "Observed", ],
-                              ggplot2::aes_string(size = "Freq"), alpha = .5) +
+                              ggplot2::aes(size = .data$Freq), alpha = .5) +
           ggplot2::geom_line(...)
       } else {
-        p <- ggplot2::ggplot(gd, ggplot2::aes_string(
-          x = x_axis_scale, y = "pvalue", color = "Type")) +
+        p <- ggplot2::ggplot(gd, ggplot2::aes(
+          x = .data[[x_axis_scale]], y = .data$pvalue, color = .data$Type)) +
           ggplot2::geom_point(data = gd[gd$Type == "Observed", ],
-                              mapping = ggplot2::aes_string(size = "Freq"),
+                              mapping = ggplot2::aes(size = .data$Freq),
                               shape = 20, alpha = .5) +
-          ggplot2::geom_line(ggplot2::aes_string(group = "Type"), ...)
+          ggplot2::geom_line(ggplot2::aes(group = .data$Type), ...)
       }
     } else {# No itempool, i.e. no Expected ICC
       if (length(unique(gd$Response)) > 2) {
-        p <- ggplot2::ggplot(gd, ggplot2::aes_string(
-          x = x_axis_scale, y = "Observed", color = "Response")) +
-          ggplot2::geom_point(ggplot2::aes_string(size = "Freq")) +
+        p <- ggplot2::ggplot(gd, ggplot2::aes(
+          x = .data[[x_axis_scale]], y = .data$Observed, color = .data$Response)) +
+          ggplot2::geom_point(ggplot2::aes(size = .data$Freq)) +
           ggplot2::geom_line(...)
       } else {
-        p <- ggplot2::ggplot(gd, ggplot2::aes_string(
-          x = x_axis_scale, y = "Observed")) +
-          ggplot2::geom_point(ggplot2::aes_string(size = "Freq")) +
+        p <- ggplot2::ggplot(gd, ggplot2::aes(
+          x = .data[[x_axis_scale]], y = .data$Observed)) +
+          ggplot2::geom_point(ggplot2::aes(size = .data$Freq)) +
           ggplot2::geom_line(...)
       }
     }

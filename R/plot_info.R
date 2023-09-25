@@ -164,11 +164,11 @@ plot_info <- function(ip, tif = FALSE, theta_range = c(-5,5), focus_item = NULL,
     if (is.null(focus_item)) {
       if (tif || ip$n$items == 1) {
         p <- ggplot2::ggplot(data = info_data,
-                             ggplot2::aes_string(x = 'theta', y = 'info'))
+                             ggplot2::aes(x = .data$theta, y = .data$info))
       } else
         p <- ggplot2::ggplot(data = info_data,
-                             ggplot2::aes_string(x = 'theta', y = 'info',
-                                                 color = 'item_id'))
+                             ggplot2::aes(x = .data$theta, y = .data$info,
+                                          color = .data$item_id))
       p <- p +
         ggplot2::geom_line(...) +
         ggplot2::labs(x = x_label, y = y_label, title = title,
@@ -183,14 +183,14 @@ plot_info <- function(ip, tif = FALSE, theta_range = c(-5,5), focus_item = NULL,
       p <- ggplot2::ggplot() +
         ggplot2::geom_line(
           data = info_data[!info_data$item_id %in% focus_item, ],
-          mapping = ggplot2::aes_string(x = "theta", y = "info",
-                                        group = "item_id"),
+          mapping = ggplot2::aes(x = .data$theta, y = .data$info,
+                                        group = .data$item_id),
           color = ifelse("color" %in% names(args), args$color, "tomato1"),
           alpha = ifelse("alpha" %in% names(args), args$alpha, 0.4)) +
         ggplot2::geom_line(
           data = info_data[info_data$item_id %in% focus_item, ],
-          mapping = ggplot2::aes_string(x = "theta", y = "info",
-                                        group = "item_id")) +
+          mapping = ggplot2::aes(x = .data$theta, y = .data$info,
+                                        group = .data$item_id)) +
         ggplot2::labs(x = x_label, y = y_label, title = title)
     }
 

@@ -91,20 +91,20 @@ plot.ks_output <- function(x, item_no, ip = NULL,
   ### ggplot2 ###
   if (!base_r_graph && requireNamespace("ggplot2", quietly = TRUE)) {
     p <- ggplot2::ggplot(data = gd) +
-      ggplot2::geom_line(ggplot2::aes_string(x = "theta", y = "icc"),
-                         color = "blue", alpha = .7, size = 1)
+      ggplot2::geom_line(ggplot2::aes(x = .data$theta, y = .data$icc),
+                         color = "blue", alpha = .7, linewidth = 1)
     # Add ICC
     if (!is.null(ip))
       p <- p +
-      ggplot2::geom_line(ggplot2::aes_string(x = "theta", y = "p"),
-                         color = "red", size = 1, alpha = .7)
+      ggplot2::geom_line(ggplot2::aes(x = .data$theta, y = .data$p),
+                         color = "red", linewidth = 1, alpha = .7)
 
     # Add confidence bands
     if (!is.null(ci)) {
       p <- p +
         ggplot2::geom_ribbon(data = gd,
-                             ggplot2::aes_string(x = "theta", ymin = "ci_low",
-                                                 ymax = "ci_high"), alpha = .25)
+                             ggplot2::aes(x = .data$theta, ymin = .data$ci_low,
+                                          ymax = .data$ci_high), alpha = .25)
     }
     p <- p +
       ggplot2::labs(x = x_label, y = y_label, title = title) +
