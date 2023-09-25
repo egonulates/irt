@@ -86,7 +86,7 @@ generate_item <- function(model = "3PL", n_categories = 4,
     # For GPCM2, switch b to d and create a new b location parameter
     if (model == "GPCM2") {
       pars$d <- pars$b
-      pars$b <- rnorm(1, 0, 0.33)
+      pars$b <- round(rnorm(1, 0, 0.33), 4)
     }
 
     if (model %in% c("GRM", "GPCM", "GPCM2")) {

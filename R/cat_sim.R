@@ -49,8 +49,8 @@ CAT_ABILITY_TYPES <- c(
 
 CAT_TESTLET_RULES <- list(
   next_item_rule = c("none", "mfi"),
-  termination_rule = c("max_item"),
-  termination_par = c("max_item")
+  termination_rule = c("max_item", "min_se"),
+  termination_par = c("max_item", "min_se")
   )
 
 
@@ -543,10 +543,28 @@ CAT_TESTLET_RULES <- list(
 #'              }
 #'            }
 #'            \item{\code{"termination_rule"}}{The rule that should be
-#'              satisfied to stop administering items from a testlet.
-#'              Currently, only \code{"max_item"} is available. The test will
-#'              terminate when maximum number of items is reached or there
-#'              are no items left in the testlet.
+#'              satisfied to stop administering items from a testlet. If
+#'              there are more than one rule, the termination rules will
+#'              be applied as the order they appear in the
+#'              \code{termination_rule} vector. For example, if
+#'              \code{termination_rule = c("max_item", "min_se")}, then if
+#'              \code{max_item} criteria is met testlet will be terminated
+#'              without checking for \code{min_se} value.
+#'
+#'              Following options are available:
+#'              \describe{
+#'                \item{\code{"max_item"}}{An integer representing the maximum
+#'                  number of items administered for each testlet. The test will
+#'                  terminate when maximum number of items is reached or there
+#'                  are no items left in the testlet.}
+#'
+#'                \item{\code{"min_se"}}{A numeric value representing the
+#'                  standard error of ability estimate value to terminate the
+#'                  test. If the standard error exceeds \code{min_se}
+#'                  value, then the testlet will terminate. This testlet
+#'                  termination criteria will only be checked if at least one
+#'                  item from the testlet has already been selected.}
+#'              }
 #'            }
 #'            \item{\code{"termination_par"}}{The test termination parameters.
 #'              See the \code{"termination_par"} above in the main function for
@@ -1374,8 +1392,8 @@ create_cat_design <- function(
     if (!"next_item_rule" %in% names(testlet_rules) ||
         !is_single_value(testlet_rules[["next_item_rule"]],
                          class = "character") ||
-        !testlet_rules[["next_item_rule"]] %in%
-        CAT_TESTLET_RULES[["next_item_rule"]]) {
+        !all(testlet_rules[["next_item_rule"]] %in%
+             CAT_TESTLET_RULES[["next_item_rule"]])) {
       stop(paste0("Invalid 'testlet_rules'. 'next_item_rule' ",
                   " should be one of the following:\n",
                   paste0("'", CAT_TESTLET_RULES[["next_item_rule"]], "'",
@@ -1383,10 +1401,10 @@ create_cat_design <- function(
                   "\n\nSee '?create_cat_design' for details."))
     }
     if (!"termination_rule" %in% names(testlet_rules) ||
-        !is_single_value(testlet_rules[["termination_rule"]],
-                         class = "character") ||
-        !testlet_rules[["termination_rule"]] %in%
-        CAT_TESTLET_RULES[["termination_rule"]]) {
+        !all(is_atomic_vector(testlet_rules[["termination_rule"]],
+                              class = "character")) ||
+        !all(testlet_rules[["termination_rule"]] %in%
+             CAT_TESTLET_RULES[["termination_rule"]])) {
       stop(paste0("Invalid 'testlet_rules'. 'termination_rule' ",
                   " should be one of the following:\n",
                   paste0("'", CAT_TESTLET_RULES[["termination_rule"]], "'",
@@ -1394,14 +1412,27 @@ create_cat_design <- function(
                   "\n\nSee '?create_cat_design' for details."))
     }
     if (!"termination_par" %in% names(testlet_rules) ||
-        !names(testlet_rules[["termination_par"]]) %in%
-        CAT_TESTLET_RULES[["termination_par"]]) {
+        !all(names(testlet_rules[["termination_par"]]) %in%
+             CAT_TESTLET_RULES[["termination_par"]])) {
       stop(paste0("Invalid 'testlet_rules'. The elements of 'termination_par' ",
                   " should be one of the following:\n",
                   paste0("'", CAT_TESTLET_RULES[["termination_par"]], "'",
                          collapse = ", "),
                   "\n\nSee '?create_cat_design' for details."))
     }
+    if (!all(names(testlet_rules[["termination_par"]]) %in%
+             testlet_rules[["termination_rule"]]) ||
+        !all(testlet_rules[["termination_rule"]] %in%
+             names(testlet_rules[["termination_par"]])) ||
+        !all(sapply(testlet_rules[["termination_par"]], is_single_value,
+                    class = "numeric")))
+      stop(paste0("Invalid 'testlet_rules'. The names of the elements in ",
+                  "'termination_par' should match the elements of ",
+                  "'termination_rule'. i.e., 'testlet_rules' should have an ",
+                  "list element named 'termination_par' with the following ",
+                  "named elements:\n'list(..., termination_par = list(",
+                  paste0(testlet_rules[["termination_rule"]],
+                         collapse = " = ..., "), " = ...))'"))
   } else testlet_rules <- NULL
 
 

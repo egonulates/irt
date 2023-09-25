@@ -1204,6 +1204,9 @@ test_that("get_unadministered_testlet_items_cpp", {
 ############################################################################@###
 test_that("terminate_testlet_cat_cpp", {
 
+  # -------------------------------------------------------------------------- #
+  # -------------------------------------------------------------------------- #
+  # -------------------------------------------------------------------------- #
   t1 <- testlet(itempool(b = -3:-2, item_id = c("t1-i1", "t1-i2"), D = 1.702),
                 testlet_id = "t1")
   t2 <- testlet(itempool(b = 2:4, item_id = c("t2-i1", "t2-i2", "t2-i3"),
@@ -1282,6 +1285,105 @@ test_that("terminate_testlet_cat_cpp", {
   expect_false(terminate_testlet_cat_cpp(testlet = t2, cd = cd,
                                          est_history = est_history,
                                          additional_args =  list()))
+  # -------------------------------------------------------------------------- #
+  # -------------------------------------------------------------------------- #
+  # -------------------------------------------------------------------------- #
+
+  t1 <- testlet(itempool(b = -4:-2, item_id = c("t1-i1", "t1-i2", "t1-i3"),
+                         D = 1.702), testlet_id = "t1")
+  t2 <- testlet(itempool(b = 2:5,
+                         item_id = c("t2-i1", "t2-i2", "t2-i3", "t2-i4"),
+                         D = 1.702), testlet_id = "t2")
+  i1 <- item(b = -1, item_id = "i1", D = 1.702)
+  i2 <- item(b = 0, item_id = "i2", D = 1.702)
+  i3 <- item(b = 1, item_id = "i3", D = 1.702)
+  ip <- c(t1, i1, i2, t2, i3)
+
+
+  cd <- create_cat_design(
+    ip = ip,
+    next_item_rule = "mfi",
+    testlet_rules = list(next_item_rule = "none",
+                         termination_rule = c("min_se", "max_item"),
+                         termination_par = list(min_se = .8, max_item = 2)),
+    termination_rule = 'max_item',
+    termination_par = list('max_item' = 4))
+
+  # -------------------------------------------------------------------------- #
+  # Two items from the testlet t1 has been administered, no more items should be
+  # administered because max_item has been reached
+  est_history <- list(
+    list(est_before = 0, se_before = 0.5, resp = 0, item = t2$item_list[[1]],
+         testlet = t2, est_after = -1, se_after = .6),
+    list(est_before = 0.5, se_before = 0.4, resp = 0, item = t2$item_list[[2]],
+         testlet = t2, est_after = -1, se_after = .6),
+    list(est_before = -1, se_before = 0.2, resp = NA,
+         item = NULL, testlet = NULL, est_after = NA, se_after = NA)
+  )
+  # Since all of the items in the testlet administered this should return FALSE
+  expect_true(terminate_testlet_cat_cpp(testlet = t2, cd = cd,
+                                        est_history = est_history,
+                                        additional_args =  list()))
+
+  # -------------------------------------------------------------------------- #
+  # Even though only one item administered, since 'min_se' satisfied, no more
+  # items from this testlet should be administered
+  est_history <- list(
+    list(est_before = 0.5, se_before = 0.4, resp = 0, item = i1,
+         testlet = NULL, est_after = -1, se_after = .9),
+    list(est_before = 0, se_before = 0.9, resp = 0, item = t2$item_list[[1]],
+         testlet = t2, est_after = -1, se_after = .7),
+    list(est_before = -1, se_before = 0.7, resp = NA,
+         item = NULL, testlet = NULL, est_after = NA, se_after = NA)
+  )
+  # Since all of the items in the testlet administered this should return FALSE
+  expect_true(terminate_testlet_cat_cpp(testlet = t2, cd = cd,
+                                        est_history = est_history,
+                                        additional_args =  list()))
+
+  # -------------------------------------------------------------------------- #
+  # Even though min_se has not been satisfied, since max_item has been reached
+  # no more items from this testlet should be administered
+  est_history <- list(
+    list(est_before = 0, se_before = 0.9, resp = 0, item = t2$item_list[[1]],
+         testlet = t2, est_after = -1, se_after = .87),
+    list(est_before = 0.5, se_before = .87, resp = 0, item = t2$item_list[[2]],
+         testlet = t2, est_after = -1, se_after = .82),
+    list(est_before = -1, se_before = .82, resp = NA,
+         item = NULL, testlet = NULL, est_after = NA, se_after = NA)
+  )
+  expect_true(terminate_testlet_cat_cpp(testlet = t2, cd = cd,
+                                        est_history = est_history,
+                                        additional_args =  list()))
+  # t1 should be fine, since none of the items administered from it yet
+  expect_false(terminate_testlet_cat_cpp(testlet = t1, cd = cd,
+                                         est_history = est_history,
+                                         additional_args =  list()))
+
+  # -------------------------------------------------------------------------- #
+  # Neither min_se nor max_item satisfied, more items should be administered
+  est_history <- list(
+    list(est_before = 0, se_before = 0.9, resp = 0, item = t2$item_list[[1]],
+         testlet = t2, est_after = -1, se_after = .87),
+    list(est_before = -1, se_before = .82, resp = NA,
+         item = NULL, testlet = NULL, est_after = NA, se_after = NA)
+  )
+  expect_false(terminate_testlet_cat_cpp(testlet = t2, cd = cd,
+                                         est_history = est_history,
+                                         additional_args =  list()))
+
+  # -------------------------------------------------------------------------- #
+  # When it is first item, return FALSE
+  est_history <- list(
+    list(est_before = 0.5, se_before = 0.4, resp = 0, item = NULL,
+         testlet = NULL, est_after = NA, se_after = NA)
+  )
+  # Since all of the items in the testlet administered this should return FALSE
+  expect_true(terminate_testlet_cat_cpp(testlet = t2, cd = cd,
+                                        est_history = est_history,
+                                        additional_args =  list()))
+
+
 
 })
 

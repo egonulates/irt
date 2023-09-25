@@ -386,6 +386,17 @@ test_that("Test 'create_cat_design' function.", {
   cd <- create_cat_design(ip = generate_ip(n = 50), ability_est_rule = 'ml')
   expect_s3_class(cat_sim(true_ability = rnorm(1), cd = cd), "cat_output")
 
+  # -------------------------------------------------------------------------- #
+  # 'map' with relevant parameters
+  cd <- create_cat_design(
+    ip = generate_ip(n = 50),
+    ability_est_rule = 'map',
+    ability_est_par = list(prior_dist = 'norm',
+                           prior_par = list(min = -2, max = 2),
+                           min_theta = -4, max_theta = 4,
+                           tol = 0.0001))
+  expect_s3_class(cd, "cat_design")
+
 
   # -------------------------------------------------------------------------- #
   # -------------------------------------------------------------------------- #
@@ -450,7 +461,7 @@ test_that("Test 'create_cat_design' function.", {
   # -------------------------------------------------------------------------- #
   # Randomesque without a parameter should throw an error
   expect_error(create_cat_design(exposure_control_rule = 'randomesque',
-                               exposure_control_par = NULL))
+                                 exposure_control_par = NULL))
 
   # -------------------------------------------------------------------------- #
   # A warning will be issued if the number of sympson-hetter-k values that are
@@ -460,11 +471,11 @@ test_that("Test 'create_cat_design' function.", {
                     misc = lapply(c(0, runif(n_ip, 0.4, 0.6)),
                                   function(k) list("sympson_hetter_k" = k)))
   expect_warning(create_cat_design(ip = ip,
-                          termination_rule = c('max_item'),
-                          termination_par = list(max_item = n_ip - 2),
-                          next_item_rule = 'mepv',
-                          exposure_control_rule = "sympson-hetter",
-                          ),
+                                   termination_rule = c('max_item'),
+                                   termination_par = list(max_item = n_ip - 2),
+                                   next_item_rule = 'mepv',
+                                   exposure_control_rule = "sympson-hetter",
+                                   ),
                  "When using 'sympson-hetter' exposure control rule")
 
 
@@ -475,12 +486,56 @@ test_that("Test 'create_cat_design' function.", {
   # -------------------------------------------------------------------------- #
   # -------------------------------------------------------------------------- #
 
+  # -------------------------------------------------------------------------- #
+  # The default testlet_rules is "max_item" termination rule with "none" item
+  # selection
   cd <- create_cat_design(
     ip = generate_ip(n = 50), testlet_rules = NULL)
   expect_s3_class(cd, "cat_design")
   expect_s3_class(cat_sim(true_ability = rnorm(1), cd = cd), "cat_output")
   expect_identical(cd$testlet_rules$next_item_rule, "none")
   expect_identical(cd$testlet_rules$termination_rule, "max_item")
+
+  # -------------------------------------------------------------------------- #
+  ### Possible errors
+  # All elements of testlet_rules should be within a limited set of rules
+  tr <- list(termination_rule = c("XYZ"), termination_par = list(XYZ = 12345))
+  expect_error(create_cat_design(ip = generate_ip(n = 50), testlet_rules = tr),
+               "Invalid 'testlet_rules'")
+  tr <- list(termination_rule = c("max_item", "XYZ"),
+             termination_par = c(max_item = 3, XYZ = 12345))
+  expect_error(create_cat_design(ip = generate_ip(n = 50), testlet_rules = tr),
+               "Invalid 'testlet_rules'")
+  # termination_rule cannot be anything other than a character vector
+  tr <- list(termination_rule = c(12), termination_par = list(XYZ = 12345))
+  expect_error(create_cat_design(ip = generate_ip(n = 50), testlet_rules = tr),
+               "Invalid 'testlet_rules'")
+  tr <- list(termination_rule = c(list("ABC")),
+             termination_par = list(XYZ = 12345))
+  expect_error(create_cat_design(ip = generate_ip(n = 50), testlet_rules = tr),
+               "Invalid 'testlet_rules'")
+
+  # all termination_par elements should be numeric
+  tr <- list(next_item_rule = "mfi",
+             termination_rule = c("min_se", "max_item"),
+             termination_par = list(min_se = .2, max_item = "A"))
+  expect_error(create_cat_design(ip = generate_ip(n = 50), testlet_rules = tr),
+               "Invalid 'testlet_rules'")
+  # there should be an element in termination_par for each termination_rule
+  # element
+  tr <- list(next_item_rule = "mfi",
+             termination_rule = c("min_se", "max_item"),
+             termination_par = list(min_se = .2))
+  expect_error(create_cat_design(ip = generate_ip(n = 50), testlet_rules = tr),
+               "list element named 'termination_par'")
+
+  # there should be an element in termination_par for each termination_rule
+  # element
+  tr <- list(next_item_rule = "mfi",
+             termination_rule = c("min_se"),
+             termination_par = list(min_se = .2, max_item = 3))
+  expect_error(create_cat_design(ip = generate_ip(n = 50), testlet_rules = tr),
+               "list element named 'termination_par'")
 
   # -------------------------------------------------------------------------- #
   # -------------------------------------------------------------------------- #
@@ -1108,6 +1163,67 @@ test_that("Test cat_sim Function", {
   lik_ratio <- lik0/lik1
   expect_false(lik_ratio < B | lik_ratio > A)
 
+  # -------------------------------------------------------------------------- #
+  # -------------------------------------------------------------------------- #
+  # -------------------- Testlet Rules -------------------------------------####
+  # -------------------------------------------------------------------------- #
+  # -------------------------------------------------------------------------- #
+
+  ip <- c(generate_testlet(testlet_id = "t1", n = 4, item_models = "Rasch"),
+          generate_testlet(testlet_id = "t2", n = 3, item_models = "Rasch"),
+          generate_ip(n = 5, model = "Rasch"),
+          generate_testlet(testlet_id = "t3", n = 5, item_models = "Rasch"))
+
+  # t1 <- testlet(itempool(b = -3:-2, item_id = c("t1-i1", "t1-i2"), D = 1.702),
+  #               testlet_id = "t1")
+  # t2 <- testlet(itempool(b = 2:4, item_id = c("t2-i1", "t2-i2", "t2-i3"),
+  #                         D = 1.702), testlet_id = "t2")
+  # i1 <- item(b = -1, item_id = "i1", D = 1.702)
+  # i2 <- item(b = 0, item_id = "i2", D = 1.702)
+  # i3 <- item(b = 1, item_id = "i3", D = 1.702)
+  # ip <- c(t1, t2, i1, i2, i3)
+
+
+  cd <- create_cat_design(
+    ip = ip,
+    next_item_rule = "mfi",
+    testlet_rules = list(next_item_rule = "none",
+                         termination_rule = "max_item",
+                         termination_par = list(max_item = 2)),
+    termination_rule = 'max_item',
+    termination_par = list('max_item' = 6))
+
+  cs <- cat_sim(true_ability = 0, cd = cd)
+  cs_df <- as.data.frame(cs)
+  # test length is 6
+  expect_equal(length(cs$est_history), 6)
+  # Two items from each testlet is administered
+  expect_equal(sum("t1" == cs_df$testlet_id), 2)
+  expect_equal(sum("t2" == cs_df$testlet_id), 2)
+  expect_equal(sum("t3" == cs_df$testlet_id), 2)
+
+  # First two items from each testlet is administered
+  expect_true("t1-Item_1" %in% cs_df$item_id)
+  expect_true("t1-Item_2" %in% cs_df$item_id)
+  expect_true("t2-Item_1" %in% cs_df$item_id)
+  expect_true("t2-Item_2" %in% cs_df$item_id)
+  expect_true("t3-Item_1" %in% cs_df$item_id)
+  expect_true("t3-Item_2" %in% cs_df$item_id)
+
+
+  # -------------------------------------------------------------------------- #
+
+  cd <- create_cat_design(
+    ip = ip,
+    next_item_rule = "mfi",
+    testlet_rules = list(next_item_rule = "none",
+                         termination_rule = c("min_se", "max_item"),
+                         termination_par = list(min_se = .8, max_item = 2)),
+    termination_rule = 'max_item',
+    termination_par = list('max_item' = 6))
+
+  cs <- cat_sim(true_ability = 0, cd = cd)
+  cs_df <- as.data.frame(cs)
 
   # -------------------------------------------------------------------------- #
   # -------------------------------------------------------------------------- #

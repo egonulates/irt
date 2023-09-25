@@ -46,6 +46,7 @@
 #'       deviation (not variance). For example, if the prior mean is 0.1 and the
 #'       prior standard deviation is 2, set the prior parameters as
 #'       \code{prior_pars = c(0.1, 2)}.
+#'       }
 #'
 #'     \item{\strong{\code{'ml'}}}{Maximum Likelihood Ability Estimation
 #'       via Newton-Raphson Algorithm.}

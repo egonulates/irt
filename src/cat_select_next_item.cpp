@@ -1422,18 +1422,27 @@ bool terminate_testlet_cat_cpp(Rcpp::S4 testlet,
                                Rcpp::List cd,
                                Rcpp::List est_history,
                                Rcpp::List additional_args) {
-   Rcpp::List testlet_rules = cd["testlet_rules"];
-
-  // get `termination_rule`, if it doesn't exist, set it to "max_item"
-  std::string termination_rule =
-    testlet_rules.containsElementNamed("termination_rule") ?
-    Rcpp::as<std::string>(testlet_rules["termination_rule"]) : "max_item";
+  Rcpp::List testlet_rules = cd["testlet_rules"];
+  
+  bool terminate_testlet = false;
+  
+  Rcpp::StringVector termination_rules(1);
+  termination_rules[0] = "max_item";
+  if (testlet_rules.containsElementNamed("termination_rule")) {
+    termination_rules = Rcpp::as<Rcpp::StringVector>(testlet_rules["termination_rule"]);
+  }
+  
   // get `termination_par`, if it doesn't exist, set it to list(max_item = 999)
-  Rcpp::List termination_par =
-    testlet_rules.containsElementNamed("termination_par") ?
-    Rcpp::as<Rcpp::List>(testlet_rules["termination_par"]) :
-    Rcpp::List::create(Named("max_item") = 999);
-
+  Rcpp::List termination_pars = Rcpp::List::create(Named("max_item") = 999);
+  if (testlet_rules.containsElementNamed("termination_par")) {
+    termination_pars = Rcpp::as<Rcpp::List>(testlet_rules["termination_par"]);
+  }
+  
+  // get `termination_rule`, if it doesn't exist, set it to "max_item"
+  std::string termination_rule = "max_item";
+    //testlet_rules.containsElementNamed("termination_rule") ?
+    //Rcpp::as<std::string>(testlet_rules["termination_rule"]) : "max_item";
+    
   // Rcpp::List remaining_item_list = get_unadministered_testlet_items_cpp(
   //       testlet, est_history);
   // int remaining_item_number = remaining_item_list.size();
@@ -1442,34 +1451,67 @@ bool terminate_testlet_cat_cpp(Rcpp::S4 testlet,
 
   std::string testlet_id = as<std::string>(testlet.slot("testlet_id"));
   Rcpp::S4 temp_s4 = as<S4>(testlet.slot("item_list")); //item pool of testlet
-  // list of items in the testlet
+  // List of items in the testlet
   Rcpp::List testlet_item_list = temp_s4.slot("item_list");
   int num_of_testlet_items = testlet_item_list.size();
-
-  if (termination_rule == "max_item") {
-    int max_item = as<int>(termination_par["max_item"]);
-    // number of items administered so far from this testlet
-    int num_of_items_administered = 0;
-    int item_no = est_history.size();  // The stage of the test.
-    Rcpp::List eh_step;
-    Rcpp::S4 temp_testlet;
-    for (int j = item_no - 2; j >= 0; j--) {
-      eh_step = est_history[j];
-      if (!Rf_isNull(eh_step["testlet"])) {
-        temp_testlet = as<S4>(eh_step["testlet"]);
-        std::string temp_testlet_id = as<std::string>(
-          temp_testlet.slot("testlet_id"));
-        if (testlet_id == as<std::string>(temp_testlet.slot("testlet_id"))) {
-          num_of_items_administered++;
-        }
+  
+  // Calculate number of items administered so far from this testlet, if 
+  // it is larger than the number of items in the testlet, terminate the 
+  // testlet (i.e. return true) without checking any testlet termination 
+  // criteria.
+  int num_of_items_administered = 0;
+  int item_no = est_history.size();  // The stage of the test.
+  Rcpp::List eh_step;
+  Rcpp::S4 temp_testlet;
+  for (int j = item_no - 2; j >= 0; j--) {
+    eh_step = est_history[j];
+    if (!Rf_isNull(eh_step["testlet"])) {
+      temp_testlet = as<S4>(eh_step["testlet"]);
+      std::string temp_testlet_id = as<std::string>(
+        temp_testlet.slot("testlet_id"));
+      if (testlet_id == as<std::string>(temp_testlet.slot("testlet_id"))) {
+        num_of_items_administered++;
       }
     }
-    // Rcout << "terminate_testlet_cat_cpp -- num_of_items_administered = " << num_of_items_administered << " -- max_item = " << max_item << " - num_of_testlet_items = " << num_of_testlet_items << std::endl;
-    return num_of_items_administered >= max_item ||
-      num_of_items_administered >= num_of_testlet_items;
+  }
+  // Rcout << std::endl << "terminate_testlet_cat_cpp -- item_no = "<< item_no << "  -- num_of_testlet_items = " << num_of_testlet_items <<  "  -- num_of_items_administered = " << num_of_items_administered << std::endl;  
+  if (num_of_items_administered >= num_of_testlet_items) {
+    return true;
+  }
+  
+  for (int r = 0; r < termination_rules.size(); r++) {
+    termination_rule = termination_rules[r];
+    
+    if (termination_rule == "max_item") {
+      int max_item = as<int>(termination_pars["max_item"]);
+      // Rcout << "  terminate_testlet_cat_cpp -- max_item = " << max_item << std::endl;       
+      if (num_of_items_administered >= max_item) {
+        // Rcout << "  terminate_testlet_cat_cpp -- Terminate due to matching max_item" << std::endl; 
+        return true;
+      }
+      // return num_of_items_administered >= max_item ||
+      //   num_of_items_administered >= num_of_testlet_items;
+      
+      // if it is the first administered item, there is no previous SE to check,
+      // so do not check min_se. At least one item from the testlet should be
+      // selected for min_se criteria to be checked. This rule does not trumps
+      // overall min_se termination rule. 
+    } else if (termination_rule == "min_se" && item_no > 1 && num_of_items_administered > 0) {
+      // it is assumed that 'termination_par' has an item called 'min_se', 
+      // this is ensured by R level function irt::create_cat_design.
+      double min_se = as<double>(termination_pars["min_se"]);
+      
+      eh_step = est_history[item_no-2];
+      double current_se = as<double>(eh_step["se_after"]);
+      // Rcout << "  terminate_testlet_cat_cpp -- min_se = " << min_se << "  --  current_se = " << current_se << std::endl;       
+      if (current_se <= min_se) {
+        // Rcout << "  terminate_testlet_cat_cpp -- Terminate due to matching min_se" << std::endl;   
+        return true;
+      }
+    }
   }
   // by default return true, i.e. terminate the testlet.
-  return true;
+  return terminate_testlet;
 }
 
 
