@@ -1221,6 +1221,104 @@ test_that("est_ability - MAP", {
                          0.5241226), rownames(resp))
   expect_identical(expected, observed$se, tolerance = 1e-5)
 
+  # -------------------------------------------------------------------------- #
+  # Compare MAP Ability Estimate with IRTPRO - 3PL
+  test_fn <- test_path("data_for_tests",
+                       "ability_estimation_map_test_cases_irtpro_001.rds")
+
+  # library(irt)
+  # library(tidyverse)
+  # n_items <- 50
+  # n_examinees <- 1200
+  # true_theta <- round(rnorm(n_examinees), 3)
+  # true_ip <- generate_ip(model = sample(c("3PL"), size = n_items,
+  #                                       replace = TRUE))
+  # resp_set <- generate_resp_set(ip = true_ip, theta = true_theta,
+  #                               prop_missing = .2)
+  # calib_irtpro <- est_irtpro(
+  #   x = resp_set,
+  #   model = true_ip$model,
+  #   target_dir = "C:/Temp/testthat-irtpro",
+  #   estimation_args = list(`E-Step` = c(500, 1e-05), SE = "S-EM",
+  #                          `M-Step` = c(500, 1e-09),
+  #                          Quadrature = c(49, 5), SEM = 0.001, SS = 1e-05),
+  #   D = 1,
+  #   scoring_method = "MAP",
+  #   scoring_args = list(Mean = 0, SD = 1, Minimum = -5, Maximum = 5),
+  #   overwrite = TRUE)
+  #
+  # expected <- calib_irtpro$score
+  # ip <- calib_irtpro$ip
+  # saveRDS(list(resp_set = resp_set, ip = calib_irtpro$ip,
+  #              score = calib_irtpro$score), test_fn)
+
+  if (file.exists(test_fn)) {
+    test_data <- readRDS(test_fn)
+    resp_set <- test_data$resp_set
+    expected <- test_data$score
+    ip <- test_data$ip
+
+    observed <- est_ability(resp = resp_set, ip = ip, method = "MAP",
+                            prior_pars = c(0, 1), tol = 1e-5,
+                            number_of_quads = 49,
+                            theta_range = c(-5, 5))
+
+
+    expect_equal(object = unname(observed$est), expected = expected$ability,
+                 tolerance = 1e-2)
+    # expect_equal(object = unname(observed$se), expected = expected$se,
+    #              tolerance = 1e-2)
+  }
+
+  # -------------------------------------------------------------------------- #
+  # Compare MAP Ability Estimate with IRTPRO - 2PL
+  test_fn <- test_path("data_for_tests",
+                       "ability_estimation_map_test_cases_irtpro_002.rds")
+
+  # library(irt)
+  # library(tidyverse)
+  # n_items <- 50
+  # n_examinees <- 1200
+  # true_theta <- round(rnorm(n_examinees), 3)
+  # true_ip <- generate_ip(model = sample(c("2PL"), size = n_items,
+  #                                       replace = TRUE))
+  # resp_set <- generate_resp_set(ip = true_ip, theta = true_theta,
+  #                               prop_missing = .2)
+  # calib_irtpro <- est_irtpro(
+  #   x = resp_set,
+  #   model = true_ip$model,
+  #   target_dir = "C:/Temp/testthat-irtpro",
+  #   estimation_args = list(`E-Step` = c(500, 1e-05), SE = "S-EM",
+  #                          `M-Step` = c(500, 1e-09),
+  #                          Quadrature = c(49, 5), SEM = 0.001, SS = 1e-05),
+  #   D = 1,
+  #   scoring_method = "MAP",
+  #   scoring_args = list(Mean = 0, SD = 1, Minimum = -5, Maximum = 5),
+  #   overwrite = TRUE)
+  #
+  # expected <- calib_irtpro$score
+  # ip <- calib_irtpro$ip
+  # saveRDS(list(resp_set = resp_set, ip = calib_irtpro$ip,
+  #              score = calib_irtpro$score), test_fn)
+
+  if (file.exists(test_fn)) {
+    test_data <- readRDS(test_fn)
+    resp_set <- test_data$resp_set
+    expected <- test_data$score
+    ip <- test_data$ip
+
+    observed <- est_ability(resp = resp_set, ip = ip, method = "MAP",
+                            prior_pars = c(0, 1), tol = 1e-5,
+                            number_of_quads = 49,
+                            theta_range = c(-5, 5))
+
+
+    expect_equal(object = unname(observed$est), expected = expected$ability,
+                 tolerance = 1e-2)
+    expect_equal(object = unname(observed$se), expected = expected$se,
+                 tolerance = 1e-2)
+  }
+
 
 
   # -------------------------------------------------------------------------- #
@@ -1539,6 +1637,104 @@ test_that("est_ability - EAP", {
            0.5941, 0.5814, 0.8836, 0.9791))
   expect_equal(unname(observed$est), expected = expected$est, tolerance = 1e-3)
   expect_equal(unname(observed$se), expected = expected$se, tolerance = 3e-3)
+
+  # -------------------------------------------------------------------------- #
+  # Compare EAP Ability Estimate with IRTPRO - 3PL
+  test_fn <- test_path("data_for_tests",
+                       "ability_estimation_eap_test_cases_irtpro_001.rds")
+
+  # library(irt)
+  # library(tidyverse)
+  # n_items <- 50
+  # n_examinees <- 1200
+  # true_theta <- round(rnorm(n_examinees), 3)
+  # true_ip <- generate_ip(model = sample(c("3PL"), size = n_items,
+  #                                       replace = TRUE))
+  # resp_set <- generate_resp_set(ip = true_ip, theta = true_theta,
+  #                               prop_missing = .2)
+  # calib_irtpro <- est_irtpro(
+  #   x = resp_set,
+  #   model = true_ip$model,
+  #   target_dir = "C:/Temp/testthat-irtpro",
+  #   estimation_args = list(`E-Step` = c(500, 1e-05), SE = "S-EM",
+  #                          `M-Step` = c(500, 1e-09),
+  #                          Quadrature = c(49, 5), SEM = 0.001, SS = 1e-05),
+  #   D = 1,
+  #   scoring_method = "EAP",
+  #   scoring_args = list(Mean = 0, SD = 1, Minimum = -5, Maximum = 5),
+  #   overwrite = TRUE)
+  #
+  # expected <- calib_irtpro$score
+  # ip <- calib_irtpro$ip
+  # saveRDS(list(resp_set = resp_set, ip = calib_irtpro$ip,
+  #              score = calib_irtpro$score), test_fn)
+
+  if (file.exists(test_fn)) {
+    test_data <- readRDS(test_fn)
+    resp_set <- test_data$resp_set
+    expected <- test_data$score
+    ip <- test_data$ip
+
+    observed <- est_ability(resp = resp_set, ip = ip, method = "EAP",
+                            prior_pars = c(0, 1), tol = 1e-5,
+                            number_of_quads = 49,
+                            theta_range = c(-5, 5))
+
+    # IRTPRO results are read to the third decimal
+    expect_equal(object = unname(observed$est), expected = expected$ability,
+                 tolerance = 1e-3)
+    expect_equal(object = unname(observed$se), expected = expected$se,
+                 tolerance = 1e-3)
+  }
+
+  # -------------------------------------------------------------------------- #
+  # Compare EAP Ability Estimate with IRTPRO - 3PL and GPCM2
+  test_fn <- test_path("data_for_tests",
+                       "ability_estimation_eap_test_cases_irtpro_002.rds")
+
+  # library(irt)
+  # library(tidyverse)
+  # n_items <- 50
+  # n_examinees <- 1200
+  # true_theta <- round(rnorm(n_examinees), 3)
+  # true_ip <- generate_ip(model = sample(c("3PL", "GPCM2"), size = n_items,
+  #                                       replace = TRUE))
+  # resp_set <- generate_resp_set(ip = true_ip, theta = true_theta,
+  #                               prop_missing = .2)
+  # calib_irtpro <- est_irtpro(
+  #   x = resp_set,
+  #   model = true_ip$model,
+  #   target_dir = "C:/Temp/testthat-irtpro",
+  #   estimation_args = list(`E-Step` = c(500, 1e-05), SE = "S-EM",
+  #                          `M-Step` = c(500, 1e-09),
+  #                          Quadrature = c(49, 5), SEM = 0.001, SS = 1e-05),
+  #   D = 1,
+  #   scoring_method = "EAP",
+  #   scoring_args = list(Mean = 0, SD = 1, Minimum = -5, Maximum = 5),
+  #   overwrite = TRUE)
+  #
+  # expected <- calib_irtpro$score
+  # ip <- calib_irtpro$ip
+  # saveRDS(list(resp_set = resp_set, ip = calib_irtpro$ip,
+  #              score = calib_irtpro$score), test_fn)
+
+  if (file.exists(test_fn)) {
+    test_data <- readRDS(test_fn)
+    resp_set <- test_data$resp_set
+    expected <- test_data$score
+    ip <- test_data$ip
+
+    observed <- est_ability(resp = resp_set, ip = ip, method = "EAP",
+                            prior_pars = c(0, 1), tol = 1e-5,
+                            number_of_quads = 49,
+                            theta_range = c(-5, 5))
+
+    # IRTPRO results are read to the third decimal
+    expect_equal(object = unname(observed$est), expected = expected$ability,
+                 tolerance = 1e-2)
+    expect_equal(object = unname(observed$se), expected = expected$se,
+                 tolerance = 1e-2)
+  }
 
   # -------------------------------------------------------------------------- #
   # One item and multiple theta raises error when resp is not a matrix.
