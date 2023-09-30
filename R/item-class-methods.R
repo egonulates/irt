@@ -426,19 +426,9 @@ item <- function(..., model = NULL, item_id = NULL, parameters = NULL,
 is.Item <- function(x){is(x,"Item")}
 
 
-###############################################################################@
-############################# print.Item #######################################
-###############################################################################@
-#' Print an \code{\link{Item-class}} object
-#'
-#' @param x An \code{\link{Item-class}} object to be printed.
-#' @param ... Passed parameters.
-#'
-#' @author Emre Gonulates
-#'
-#' @keywords internal
-#'
-print.Item <- function(x, ...)
+
+#' @noRd
+print_item <- function(x)
 {
   model_name <- c(class(x))
   cat(paste0("A '", model_name, "' item.\n"))
@@ -503,6 +493,26 @@ print.Item <- function(x, ...)
 }
 
 
+
+
+###############################################################################@
+############################# print.Item #######################################
+###############################################################################@
+#' Print an \code{\link{Item-class}} object
+#'
+#' @param x An \code{\link{Item-class}} object to be printed.
+#' @param ... Passed parameters.
+#'
+#' @author Emre Gonulates
+#'
+#' @export
+#'
+#' @keywords internal
+#'
+setMethod("print", "Item", function(x, ...) {print_item(x)})
+
+
+
 ###############################################################################@
 ############################# show.Item ########################################
 ###############################################################################@
@@ -520,7 +530,7 @@ print.Item <- function(x, ...)
 #'
 #' @importFrom methods show
 #'
-setMethod("show", "Item", function(object) {print.Item(object)})
+setMethod("show", "Item", function(object) {print_item(object)})
 
 
 
