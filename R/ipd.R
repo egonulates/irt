@@ -7,16 +7,21 @@
 #' (ICCs) of item parameters from two different item pools. This is also
 #' referred to as WRMSD (Weighted Root Mean Squared Difference).
 #'
-#' There are no strict thresholds for determining the significance of D2 in
-#' identifying item drift. A comprehensive approach considering other measures
-#' is recommended. Nevertheless, as a general guideline, for dichotomous items,
-#' a D2 value greater than 0.1 may warrant further scrutiny. For polytomous
-#' items with two thresholds (or three score categories), a D2 value exceeding
-#' 0.15, for those with three thresholds (or four score categories), a D2 value
-#' greater than 0.225, for those with four thresholds (or five score
-#' categories), a D2 value larger than 0.3, and for items with five thresholds
-#' (or six score categories), a D2 value larger than 0.375 may be indicative of
-#' item drift and should be investigated further.
+#' Determining the significance of D2 in identifying item drift lacks strict
+#' thresholds. It is advisable to adopt a comprehensive approach that takes into
+#' account other measures. Nevertheless, it is worthwhile to consider the square
+#' root of D2 (\code{sqrt(D2)}) value. As a general rule of thumb, for
+#' dichotomous items, a square root of D2 value greater than 0.1 may signal a
+#' need for closer examination.
+#'
+#' For polytomous items with two thresholds (or three score categories), a
+#' square root of D2 value surpassing 0.15 warrants attention. For those with
+#' three thresholds (or four score categories), if the square root of D2 is
+#' greater than 0.225, for items with four thresholds (or five score
+#' categories), a square root of D2 value larger than 0.3 may be indicative of
+#' item drift. Finally, for items with five thresholds (or six score
+#' categories), a square root of D2 value greater than 0.375 should prompt
+#' further investigation into potential item drift.
 #'
 #' @param ip1 Itempool object representing the first calibration.
 #' @param ip2 Itempool object representing the second calibration.
@@ -70,7 +75,7 @@
 #' ipd_d2(ip1 = old_ip, ip2 = new_ip, theta = theta, weights = weights)
 
 ipd_d2 <- function(ip1, ip2, theta = seq(-4, 4, 0.1),
-                   weights = dnorm(seq(-4, 4, 0.1)),
+                   weights = stats::dnorm(seq(-4, 4, 0.1)),
                    anchor_item_ids = NULL) {
 
   if (!inherits(ip1, "Itempool") || !inherits(ip2, "Itempool"))  {
@@ -155,6 +160,20 @@ ipd_d2 <- function(ip1, ip2, theta = seq(-4, 4, 0.1),
 #'   the critical value using \code{qnorm(1-alpha/2)} (which equals 1.96 when
 #'   \eqn{alpha = 0.05}), items with absolute robust-z values exceeding this
 #'   threshold will be marked as unstable.
+#' @param iqr_type An integer indicating the choice of quantile algorithm. Refer
+#'   to the \code{?quantile} function's \code{type} argument for more details.
+#'   For instance, SAS's default quantile algorithm, \code{QNTLDEF=5},
+#'   corresponds to \code{iqr_type = 2} in R. The default value is
+#'   \code{iqr_type = 7}.
+#' @param exclude_unstable A logical value. The default is \code{TRUE}, meaning
+#'   that unstable items flagged by Robust-z for 'a' are excluded from Robust-z
+#'   'b' or threshold parameter calculations. If set to \code{FALSE}, unstable
+#'   items will be included in the Robust-z calculation for 'b' and threshold
+#'   parameters. Note that changing \code{exclude_unstable} parameter does not
+#'   affect the calculation of the 'A' constant for the Robust-z for 'b'
+#'   parameter calculation. The unstable items flagged by Robust-z for 'a' are
+#'   always excluded from this ('A') calculation.
+#'
 #'
 #' @noRd
 #'
@@ -208,7 +227,8 @@ ipd_d2 <- function(ip1, ip2, theta = seq(-4, 4, 0.1),
 #'   item(a = 0.737, b = c(2.599, 1.250, -1.209), model = "GPCM"))
 #' ipd_robustz(ip1, ip2)
 #'
-ipd_robustz <- function(ip1, ip2, anchor_item_ids = NULL, alpha = 0.01) {
+ipd_robustz <- function(ip1, ip2, anchor_item_ids = NULL, alpha = 0.01,
+                        iqr_type = 7, exclude_unstable = TRUE) {
 
   if (!inherits(ip1, "Itempool") || !inherits(ip2, "Itempool"))  {
     stop("Invalid input for 'ip1' and/or 'ip2'. Both 'ip1' and 'ip2' should ",
@@ -222,8 +242,9 @@ ipd_robustz <- function(ip1, ip2, anchor_item_ids = NULL, alpha = 0.01) {
     if (!all(anchor_item_ids %in% ip2$resp_id) ||
         !all(anchor_item_ids %in% ip1$resp_id))
       stop("All 'anchor_item_ids' should be in both ip2 and ip1.")
-    ip2 <- ip2[anchor_item_ids %in% ip2$resp_id]
-    ip1 <- ip1[anchor_item_ids %in% ip1$resp_id]
+
+    ip2 <- ip2[anchor_item_ids]
+    ip1 <- ip1[anchor_item_ids]
   }
 
   ip1_df <- as.data.frame(ip1)
@@ -263,8 +284,8 @@ ipd_robustz <- function(ip1, ip2, anchor_item_ids = NULL, alpha = 0.01) {
          "parameters.")
   a_diff <- log(a2) - log(a1)
   temp_z <- (a_diff - stats::median(a_diff, na.rm = TRUE)) /
-    (0.74 * stats::IQR(a_diff, na.rm = TRUE))
-  output$a$robust_z <- temp_z
+    (0.74 * stats::IQR(a_diff, na.rm = TRUE, type = iqr_type))
+  output$a$robust_z <- stats::setNames(temp_z, ip1_df$item_id)
   output$a$cor <- stats::cor(a2, a1, use = "pairwise.complete.obs")
   output$a$sd_ratio <- stats::sd(a2, na.rm = TRUE)/stats::sd(a1, na.rm = TRUE)
 
@@ -277,7 +298,11 @@ ipd_robustz <- function(ip1, ip2, anchor_item_ids = NULL, alpha = 0.01) {
   # ip1_list <- flatten_itempool_cpp(ip1)
   # ip2_list <- flatten_itempool_cpp(ip2)
 
+  excluded_items <- NULL
+  if (exclude_unstable) excluded_items <- output$a$unstable
+
   # par <- "d3"
+  # par <- "b"
   for (par in c("b",
                 "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10",
                 "b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "b10"
@@ -285,9 +310,12 @@ ipd_robustz <- function(ip1, ip2, anchor_item_ids = NULL, alpha = 0.01) {
     if (!par %in% colnames(ip1_df)) next
     par1 <- ip1_df[[par]]
     par2 <- ip2_df[[par]]
-    par_diff <- par1 - A * par2
-    temp_z <- stats::setNames((par_diff - stats::median(par_diff, na.rm = TRUE)) /
-      (0.74 * stats::IQR(par_diff, na.rm = TRUE)), ip1_df$item_id)
+    par_diff <- stats::setNames(par1 - A * par2, ip1_df$item_id)
+    temp_median <- stats::median(
+      par_diff[setdiff(names(par_diff), excluded_items)], na.rm = TRUE)
+    temp_iqr <- stats::IQR(par_diff[setdiff(names(par_diff), excluded_items)],
+                           na.rm = TRUE, type = iqr_type)
+    temp_z <- (par_diff - temp_median) / (0.74 * temp_iqr)
     output[[par]]$robust_z <- temp_z
     output[[par]]$unstable <- names(temp_z)[!is.na(temp_z) & abs(temp_z) >= cv]
   }
@@ -307,7 +335,7 @@ ipd_robustz <- function(ip1, ip2, anchor_item_ids = NULL, alpha = 0.01) {
   # }
   # b_diff <- b1 - A * b2
   # output$b$robust_z <- (b_diff - stats::median(b_diff)) /
-  #   (0.74 * stats::IQR(b_diff))
+  #   (0.74 * stats::IQR(b_diff, type = iqr_type))
   # output$b$unstable <- names(output$b$robust_z)[output$b$robust_z >= cv]
 
   return(output)
@@ -354,12 +382,17 @@ ipd_robustz <- function(ip1, ip2, anchor_item_ids = NULL, alpha = 0.01) {
 #'   using \code{qnorm(1-alpha/2)} (which equals 1.96 when \eqn{alpha = 0.05}),
 #'   items with absolute robust-z values exceeding this threshold will be marked
 #'   as unstable.
+#' @param iqr_type An integer indicating the choice of quantile algorithm. Refer
+#'   to the \code{?quantile} function's \code{type} argument for more details.
+#'   For instance, SAS's default quantile algorithm, \code{QNTLDEF=5},
+#'   corresponds to \code{iqr_type = 2} in R. The default value is
+#'   \code{iqr_type = 7}.
+#'
 #' @param theta A numeric vector containing the quadrature points. Only needed
 #'   when \code{method = "d2"}.
 #' @param weights A numeric vector containing the weights assigned to the
 #'   quadrature points. The length of this vector should match the length of the
 #'   \code{theta} argument. Only needed when \code{method = "d2"}
-#'
 #'
 #' @return Return a list depending on the method:
 #'   \describe{
@@ -473,12 +506,17 @@ ipd_robustz <- function(ip1, ip2, anchor_item_ids = NULL, alpha = 0.01) {
 #' ipd(ip1 = old_ip, ip2 = new_ip, theta = theta, weights = weights)
 #'
 ipd <- function(ip1, ip2, method = "robust-z", anchor_item_ids = NULL,
+                # Robust-z
                 alpha = 0.01,
-                theta = seq(-4, 4, 0.1), weights = dnorm(seq(-4, 4, 0.1))
+                iqr_type = 7,
+                # D2
+                theta = seq(-4, 4, 0.1),
+                weights = stats::dnorm(seq(-4, 4, 0.1))
                 ) {
   if (method == "robust-z") {
     output <- ipd_robustz(ip1 = ip1, ip2 = ip2,
-                          anchor_item_ids = anchor_item_ids, alpha = alpha)
+                          anchor_item_ids = anchor_item_ids, alpha = alpha,
+                          iqr_type = iqr_type)
   } else if (method == "d2") {
     output <- ipd_d2(ip1 = ip1, ip2 = ip2,
                      anchor_item_ids = anchor_item_ids, theta = theta,

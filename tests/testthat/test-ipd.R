@@ -26,13 +26,44 @@ test_that("ipd_robustz", {
   ipdf2$a <- ipdf1$a + runif(n, -0.25, .25)
   ipdf2$b <- ipdf1$b + runif(n, -0.25, .25)
   ipdf2$a[1] <- ipdf1$a[1] + 2
+  ipdf2$a[2] <- ipdf1$a[2] + 1.5
   ipdf2$b[n] <- ipdf1$b[n] - 1
   ip2 <- itempool(ipdf2)
   result <- ipd(ip1 = ip1, ip2 = ip2, method = "robust-z")
+  expect_true(all(ip1$item_id == names(result$a$robust_z)))
+  expect_true(all(ip1$item_id == names(result$b$robust_z)))
   expect_true("Item_1" %in% result$a$unstable)
+  expect_true("Item_2" %in% result$a$unstable)
   expect_true(paste0("Item_", n) %in% result$b$unstable)
 
+  # The results for Robust-z b will different when unstable items from Robust-z
+  # for 'a' are included or excluded for Robust-z 'b' calculations.
+  result_not_exclude <- ipd_robustz(ip1 = ip1, ip2 = ip2,
+                                    exclude_unstable = FALSE)
+  expect_identical(result$a$robust_z, result_not_exclude$a$robust_z)
+  expect_true(all(result$b$robust_z != result_not_exclude$b$robust_z))
 
+
+  # -------------------------------------------------------------------------- #
+  # Robust-z with non-null anchor_items
+  n <- 20
+  ip1 <- generate_ip(n = n)
+  ipdf1 <- ipdf2 <- as.data.frame(ip1)
+  ipdf2$a <- ipdf1$a + runif(n, -0.25, .25)
+  ipdf2$b <- ipdf1$b + runif(n, -0.25, .25)
+  ipdf2$a[1] <- ipdf1$a[1] + 2
+  ipdf2$b[n] <- ipdf1$b[n] - 1
+  # Shuffle and remove some items
+  ipdf2 <- ipdf2[sample(1:n), ][sample(1:n, 15), ]
+  # Rename an item
+  ipdf2$item_id[sample(1:nrow(ipdf2), 1)] <- "new_item_123"
+  ip2 <- itempool(ipdf2)
+  # Set only a few of the items as anchors
+  anchor_item_ids <- intersect(ipdf2$item_id, ipdf1$item_id)[1:10]
+  result <- ipd(ip1 = ip1, ip2 = ip2, method = "robust-z",
+                anchor_item_ids = anchor_item_ids)
+  expect_true(all(names(result$a$robust_z) == anchor_item_ids))
+  expect_true(all(names(result$b$robust_z) == anchor_item_ids))
 
   # -------------------------------------------------------------------------- #
   # Robust-z
