@@ -637,7 +637,7 @@ plot_empirical_icc2 <- function(resp, item, bins = 10, binwidth = NULL,
 
   # Add common graph elements
   p <- p +
-    ggplot2::labs(x = x_label, y = "Proportion Correct", title = title)
+    ggplot2::labs(x = x_label, y = "Proportion Correct", title = title) +
     ggplot2::guides(x = ggplot2::guide_axis(n.dodge = n_dodge,
                                             check.overlap = TRUE)) +
     ggplot2::ylim(c(0, 1)) +
