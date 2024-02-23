@@ -821,7 +821,6 @@ setMethod("[[", c("Itempool", "numeric", "missing"),
 #' @param j This will not be used in \code{\link{Itempool-class}} objects.
 #' @param value An \code{\link{Item-class}} or \code{\link{Testlet-class}}
 #'   object.
-#' @param ... Additional parameters to be passed to the function.
 #'
 #' @return An updated \code{\link{Itempool-class}} object.
 #'

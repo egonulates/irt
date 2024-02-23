@@ -538,7 +538,7 @@ irtpro_read_scores <- function(
 #'   The following elements can be changed:
 #'   \code{list(Decimal = 4, Processors = 1, `Min Exp` = 1)}
 #'
-#' @param print_extra A string vector specifiying additional results to be
+#' @param print_extra A string vector specifying additional results to be
 #'   printed:
 #'   `StdRes` (Print table of standardized residuals)
 #'   `CTLD` (Compute Chen-Thissen LD and item fit statistics)

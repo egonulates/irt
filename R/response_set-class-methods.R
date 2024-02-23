@@ -1214,7 +1214,6 @@ setMethod("[[", c("Response_set", "numeric", "missing"),
 #' @param i indices specifying elements to extract or replace.
 #' @param j This will not be used in \code{\link{Response_set-class}} objects.
 #' @param value An \code{\link{Response-class}} object.
-#' @param ... Additional parameters to be passed to the function.
 #'
 #' @return An updated \code{\link{Response_set-class}} object.
 #'

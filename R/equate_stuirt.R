@@ -355,7 +355,7 @@ stuirt_read_output <- function(output_path) {
 #'         proficiency continuum. In the program, the proficiency distribution
 #'         is assumed a standard normal one. The possible maximum number of
 #'         quadrature points is 180. Although more than 180 quadrature points
-#'         are theoretically possible, the authors’ experiences suggest that
+#'         are theoretically possible, the author's experiences suggest that
 #'         quadrature weights tend to be unstable when trying to obtain more
 #'         than about 200 quadrature points. According to Zeng and Kolen (1994),
 #'         even 80 quadrature points seem to be enough to estimate the slope and
@@ -395,7 +395,7 @@ stuirt_read_output <- function(output_path) {
 #'         should supply two real numbers for a starting point and an ending
 #'         point. The theta continuum ranging from the starting point to the
 #'         ending point is divided into 1 - n intervals with an equal length."
-#'         (p.12). In this funciton only "EQ" is available which means same
+#'         (p.12). In this function only "EQ" is available which means same
 #'         constant weight of 1 is used. }
 #'       }
 #'     }
@@ -719,7 +719,7 @@ equate_stuirt <- function(
     syntax_text <- c(syntax_text, paste0("SY ", paste0(sy, collapse = " ")))
   }
 
-  # Add sy:
+  # Add lm:
   if (!is.null(lm)) {
     if (!is_atomic_vector(lm, accept_na = FALSE) || length(lm) != 6) {
       stop("Invalid 'lm' argument. 'lm' argument should be a six element ",

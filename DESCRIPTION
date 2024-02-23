@@ -1,7 +1,7 @@
 Package: irt
 Type: Package
 Title: Item Response Theory and Computerized Adaptive Testing Functions
-Version: 0.2.8-3
+Version: 0.2.9
 Authors@R: c(person(given = "Emre", 
                     family = "Gonulates", 
                     role = c("aut", "cre"),
@@ -10,7 +10,7 @@ Authors@R: c(person(given = "Emre",
 Maintainer: Emre Gonulates <egonulates@gmail.com>
 Description: A collection of Item Response Theory (IRT) and Computerized 
      Adaptive Testing (CAT) functions that are used in psychometrics. 
-URL: https://github.com/egonulates/irt (devel)
+URL: https://github.com/egonulates/irt
 BugReports: https://github.com/egonulates/irt/issues
 License: AGPL (>= 3)
 Depends:
@@ -20,7 +20,7 @@ Imports:
     Rcpp (>= 1.0.1),
     parallel
 NeedsCompilation: no
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Encoding: UTF-8
 Language: en-US
 Collate:

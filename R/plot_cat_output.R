@@ -61,7 +61,7 @@ get_data_plot_cat_output <- function(cat_output, plot_b) {
 #'   at that stage. The default value is \code{TRUE}.
 #' @param horizontal_line An option to add a horizontal line. Provide either one
 #'          of these or a list of a combination of these (except \code{NULL}).
-#'          \itemize{
+#'          \describe{
 #'            \item{"true_theta"}{Add a horizontal line for true theta.
 #'              Default option.}
 #'            \item{"final_theta"}{Add a horizontal line at final theta

@@ -847,7 +847,7 @@ classification_indices <- function(
 #'   If the ratings are ordinal (for example Likert scale), weighted kappa
 #'   coefficient can be used. Weighted Kappa penalizes the larger discrepancies
 #'   between raters. More emphasis is put to large differences between rating
-#'   and small emphais will be put on smaller differences. The available
+#'   and small emphasis will be put on smaller differences. The available
 #'   weighting options are \code{"linear"} and \code{"quadratic"}. By default
 #'   the function calculates \code{"unweighted"} Kappa coefficient.
 #'

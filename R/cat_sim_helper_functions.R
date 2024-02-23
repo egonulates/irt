@@ -701,7 +701,7 @@ show.cat_output <- function(object) .print.cat_output(object)
 ###############################################################################@
 #' This method prints an "cat_output" class object
 #'
-#' @param object An 'cat_output' class object that will be printed.
+#' @param x An 'cat_output' class object that will be printed.
 #' @param ... Additional arguments
 #' @param n maximum number of administered items to print. Default is
 #'   \code{NULL}, where all items are printed if the number of items are

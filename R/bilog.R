@@ -289,7 +289,7 @@ bilog_create_datafile <- function(
 #'
 #' @noRd
 bilog_create_group_info <- function(x = NULL, group_var = NULL,
-                              reference_group = NULL) {
+                                    reference_group = NULL) {
   group <- NULL
   group_info <- NULL
   num_of_groups <- 0
@@ -678,7 +678,7 @@ bilog_read_scores <- function(score_file, x, examinee_id_var = NULL,
       col.names = c("weight", "test", "tried", "right", "percent",
                     "ability", "se", "prob", "unknown1")
                               )
-  }
+  } else return(NULL)
   scores <- scores[, c("tried", "right", "ability", "se", "prob")]
   # Add group info
   if (!is.null(group_var) && group_var %in% names(x)) {
@@ -766,6 +766,146 @@ wrap_text <- function(t, width = 80, tab = NULL, skip_tab = 0) {
   return(r)
 }
 
+
+
+
+#' Capture E-M Cycles of BILOG-MG Calibration
+#'
+#' @description
+#' This funciton captures the E-M cycles, Newton cycles and quadrature
+#' points from the BILOG-MG output's ".PH2" file.
+#'
+#' @param ph2_file The path of the ".PH2" file.
+#' @param converged Logical value for whether the calibration converged or not
+#' @param criterion The convergence criterion for EM and Newton iterations. The
+#'   default value is 0.01.
+#' @param max_em_cycles An integer (0, 1, ...) representing the maximum number
+#'   of EM cycles. This value will be represented in the BILOG-MG control file
+#'   as: \code{CYCLES = max_em_cycles}. The default value is 100.
+#' @param newton An integer (0, 1, ...) representing the number of Gauss-Newton
+#'   iterations following EM cycles. This value will be represented in the
+#'   BILOG-MG control file as: \code{NEWTON = newton}.
+#'
+#' @return A \code{list} with the following elements is returned:
+#'
+#'   \describe{
+#'     \item{"em_cycles"}{E-M Cycles of the calibration.}
+#'     \item{"newton_cycles"}{Newton Cycles of the calibration}
+#'     \item{"cycle"}{The number of cycles run before calibration converges or
+#'     fails to converge.}
+#'     \item{"largest_change"}{The largest change observed between the last two
+#'     cycles.}
+#'     \item{"neg_2_log_likelihood"}{-2 Log Likelihood value. This value is
+#'     \code{NULL} when the model does not converge. This element is not created
+#'     when \code{model = "CTT"}.}
+#'    }
+#'
+#' @noRd
+#'
+bilog_em_cycles <- function(ph2_file, converged, criterion = 0.01,
+                            max_em_cycles = 100, newton = 20) {
+  if (!file.exists(ph2_file)) return(NULL)
+  ph2_content <- readLines(con = ph2_file)
+
+  result <- list()
+  newton_header_regex <- "^([[:blank:]]*)\\[(FULL )?NEWTON CYCLES\\]([[:blank:]]*)$"
+
+  ## E-M Cycles ##
+  temp1 <- which(grepl("^([[:blank:]]*)\\[E-M CYCLES\\]([[:blank:]]*)$",
+                 ph2_content)) + 1
+  if (any(grepl(newton_header_regex, ph2_content))) {
+    temp2 <- which(grepl(newton_header_regex, ph2_content)) - 1
+  } else {
+    temp2 <- which(grepl("^([[:blank:]]*)\\INTERVAL COUNTS FOR COMPUTATION OF ITEM CHI-SQUARES",
+                         ph2_content)) - 1
+  }
+  if (length(temp1) == 0 || length(temp2) == 0) {
+    message("Cannot read EM-Cycle information.", call. = FALSE)
+    return(NULL)
+  }
+  em_content <- ph2_content[temp1:temp2]
+  em_content <- em_content[-which(em_content == "")]
+
+
+  temp_pattern <- "^([[:blank:]]*)CYCLE([[:blank:]]*)([[:digit:]]*);"
+  temp <- em_content[grepl(temp_pattern, em_content)]
+  temp <- gsub(";(.*)", "", temp)
+  temp_cycle <- as.integer(gsub("^([[:blank:]]*)CYCLE([[:blank:]]*)", "", temp))
+
+  temp_pattern <- "^([[:blank:]]*)-2 LOG LIKELIHOOD([[:blank:]]*)[:=]([[:blank:]]*)"
+  temp <- em_content[grepl(temp_pattern, em_content)]
+  temp_ll <- as.numeric(gsub(temp_pattern, "", temp))
+
+  temp_pattern <- "^([[:blank:]]*)CYCLE([[:blank:]]*)([[:digit:]]*);"
+  temp <- em_content[grepl(temp_pattern, em_content)]
+  temp <- gsub(paste0("^([[:blank:]]*)CYCLE([[:blank:]]*)([[:digit:]]*);",
+                      "([[:blank:]]*)LARGEST CHANGE=([[:blank:]]*)"), "", temp)
+  temp_largest_change <- as.numeric(temp)
+
+  em_cycles <- data.frame(cycle = temp_cycle,
+                          neg_2_log_likelihood = temp_ll,
+                          largest_change = temp_largest_change)
+  result$em_cycles <- em_cycles
+
+  ## Newton Cycles ##
+  if (any(grepl(newton_header_regex, ph2_content))) {
+    temp1 <- which(grepl(newton_header_regex, ph2_content)) + 1
+
+    temp2 <- which(grepl(paste0(
+      "^([[:blank:]]*)INTERVAL COUNTS FOR COMPUTATION OF ITEM CHI-SQUARES",
+      "([[:blank:]]*)$"), ph2_content)) - 1
+    # Mostly when there is no convergence
+    if (length(temp2) == 0) {
+      temp2 <- which(grepl(paste0(
+        "ITEM PARAMETERS AFTER CYCLE([[:blank:]]*)([[:digit:]]*)$"),
+        ph2_content)) - 1
+    }
+
+    newton_content <- ph2_content[temp1:temp2]
+    newton_content <- newton_content[-which(newton_content == "")]
+
+    temp_pattern <- "^([[:blank:]]*)CYCLE([[:blank:]]*)([[:digit:]]*);"
+    temp <- newton_content[grepl(temp_pattern, newton_content)]
+    temp <- gsub(";(.*)", "", temp)
+    temp_cycle <- as.integer(gsub("^([[:blank:]]*)CYCLE([[:blank:]]*)", "", temp))
+
+    temp_pattern <- "^([[:blank:]]*)-2 LOG LIKELIHOOD([[:blank:]]*)[:=]([[:blank:]]*)"
+    temp <- newton_content[grepl(temp_pattern, newton_content)]
+    temp_ll <- as.numeric(gsub(temp_pattern, "", temp))
+
+    temp_pattern <- "^([[:blank:]]*)CYCLE([[:blank:]]*)([[:digit:]]*);"
+    temp <- newton_content[grepl(temp_pattern, newton_content)]
+    temp <- gsub(paste0("^([[:blank:]]*)CYCLE([[:blank:]]*)([[:digit:]]*);",
+                        "([[:blank:]]*)LARGEST CHANGE=([[:blank:]]*)"), "", temp)
+
+    temp_largest_change <- suppressWarnings(as.numeric(temp))
+
+    newton_cycles <- data.frame(cycle = temp_cycle,
+                                neg_2_log_likelihood = temp_ll,
+                                largest_change = temp_largest_change)
+    result$newton_cycles <- newton_cycles
+  }
+
+  # Final additions
+  temp_pattern <- paste0(
+    "^ CYCLE([[:blank:]]*)([[:digit:]]*);([[:blank:]]*)",
+    "LARGEST CHANGE=([[:blank:]]+)([0-9]*?\\.?[0-9]*?)(.*)$")
+  temp <- utils::tail(
+    ph2_content[grepl(pattern = temp_pattern, ph2_content)], 1)
+  result$cycle <- as.integer(gsub("^ CYCLE (.*);(.*) LARGEST CHANGE= (.*)$",
+                                  replacement = "\\1", temp))
+  result$largest_change <- as.numeric(gsub(temp_pattern,
+                                           replacement = "\\6", temp))
+
+  # If the result converged get the -2 Log Likelihood
+  if (converged) {
+    result$neg_2_log_likelihood <- as.numeric(
+      gsub("^ -2 LOG LIKELIHOOD = ", "",
+           utils::tail(ph2_content[grepl(pattern = "^ -2 LOG LIKELIHOOD = ",
+                                         ph2_content)],1)))
+  } else result$neg_2_log_likelihood <- NULL
+  return(result)
+}
 
 #' Check the Version of BILOG-MG Installation
 #'
@@ -1053,7 +1193,7 @@ bilog_check_version <- function(bilog_exe_folder) {
 #'       parameters}
 #'     }
 #'   Quoted descriptions were taken from the BILOG-MG manual.
-
+#'
 #'   Examples:
 #'   \enumerate{
 #'     \item A specific set of priors:
@@ -1082,7 +1222,7 @@ bilog_check_version <- function(bilog_exe_folder) {
 #' @param show_output_on_console A logical value indicating whether to capture
 #'   and display the output of the command on the R console. The default is
 #'   \code{TRUE}.
-
+#'
 #' @param bilog_exe_folder The directory containing the Bilog-MG executable
 #'   files. This function supports two versions: BILOG-MG 3 and BILOG-MG 4. For
 #'   BILOG-MG version 3, the directory should include the files
@@ -1110,29 +1250,32 @@ bilog_check_version <- function(bilog_exe_folder) {
 #'       This element is not created when \code{model = "CTT"}.}
 #'
 #'     \item{"ctt"}{Classical Test Theory (CTT) statistics, including p-values,
-#'     biserial, and point-biserial estimates calculated by BILOG-MG. If there
-#'     are groups, group-specific CTT statistics can be found in
-#'     \code{ctt$group$GROUP-NAME}. Overall statistics for the entire group are
-#'     located at \code{ctt$overall}.}
+#'       biserial, and point-biserial estimates calculated by BILOG-MG. If there
+#'       are groups, group-specific CTT statistics can be found in
+#'       \code{ctt$group$GROUP-NAME}. Overall statistics for the entire group
+#'       are located at \code{ctt$overall}.}
 #'
 #'     \item{"failed_items"}{A data frame containing items that could not be
-#'     estimated.}
+#'       estimated.}
 #'
 #'     \item{"syntax"}{The syntax file.}
 #'
-#'     \item{"converged"}{A logical value indicating whether the model has
-#'     converged (\code{TRUE}) or not (\code{FALSE}). This element is not
-#'     created when \code{model = "CTT"}.}
+#'     \item{"em_cycles"}{E-M Cycles of the calibration.}
+#'
+#'     \item{"newton_cycles"}{Newton Cycles of the calibration}
 #'
 #'     \item{"cycle"}{The number of cycles run before calibration converges or
-#'     fails to converge.}
+#'       fails to converge.}
 #'
 #'     \item{"largest_change"}{The largest change observed between the last two
-#'     cycles.}
+#'       cycles.}
 #'
-#'     \item{"neg_2_log_likelihood"}{-2 Log Likelihood value. This value is
-#'     \code{NULL} when the model does not converge. This element is not created
-#'     when \code{model = "CTT"}.}
+#'     \item{"neg_2_log_likelihood"}{-2 Log Likelihood value of the last step of
+#'       the E-M cycles. See also \code{$em_cycles}. This value is \code{NULL}
+#'       when the model does not converge. This element is not created when
+#'       \code{model = "CTT"}.}
+#'
+#'     \item{"posterior_dist"}{Posterior quadrature points and weights.}
 #'
 #'     \item{"input"}{A list object that stores the arguments passed to the
 #'     function.}
@@ -2151,30 +2294,22 @@ est_bilog <- function(
   result$converged <- check_bilog_convergence(par_file = par_file,
                                               ph2_file = ph2_file,
                                               ph3_file = ph3_file)
-  if (file.exists(ph2_file)) {
-    ph2_content <- readLines(con = ph2_file)
-    temp_pattern <- paste0(
-      "^ CYCLE([[:blank:]]*)([[:digit:]]*);([[:blank:]]*)",
-      "LARGEST CHANGE=([[:blank:]]+)([0-9]*?\\.?[0-9]*?)(.*)$")
-    temp <- utils::tail(
-      ph2_content[grepl(pattern = temp_pattern, ph2_content)], 1)
-    result$cycle <- as.integer(gsub("^ CYCLE (.*);(.*) LARGEST CHANGE= (.*)$",
-                                    replacement = "\\1", temp))
-    result$largest_change <- as.numeric(gsub(temp_pattern,
-                                             replacement = "\\6", temp))
-
-    # If the result converged get the -2 Log Likelihood
-    if (result$converged) {
-      result$neg_2_log_likelihood <- as.numeric(
-        gsub("^ -2 LOG LIKELIHOOD = ", "",
-             utils::tail(ph2_content[grepl(pattern = "^ -2 LOG LIKELIHOOD = ",
-                                           ph2_content)],1)))
-
-      # Get posterior quadrature points and weights:
-      result$posterior_dist <- bilog_read_posterior_dist(
-        ph2_file = ph2_file, group_info = group_info)
-    } else result$neg_2_log_likelihood <- NULL
+  # Add cycle information
+  if (model != "CTT") {
+    ph2_content <- bilog_em_cycles(ph2_file = ph2_file,
+                                   converged = result$converged,
+                                   criterion = criterion,
+                                   max_em_cycles = max_em_cycles,
+                                   newton = newton)
+    result <- c(result, ph2_content)
   }
+
+  # Get posterior quadrature points and weights:
+  if (result$converged && file.exists(ph2_file)) {
+    result$posterior_dist <- bilog_read_posterior_dist(
+      ph2_file = ph2_file, group_info = group_info)
+  }
+
   # Read item parameters
   if (model == "CTT") {
     result <- result[-which(names(result) %in%
@@ -2206,8 +2341,13 @@ est_bilog <- function(
   }
 
   if (model != "CTT" && !is.null(scoring_options) &&
-      (length(scoring_options) > 0) && result$converged) {
-    result$score <- bilog_read_scores(score_file, x = x,
+      (length(scoring_options) > 0) && result$converged &&
+      # This is for when the funciton is used to read just parameters
+      # Currently, to read the examinee abilities, the function needs 'x' to
+      # determine the number of examinees. The function 'bilog_read_scores' can
+      # be improved to remove this dependence in the future.
+      !is.null(x)) {
+    result$score <- bilog_read_scores(score_file = score_file, x = x,
                                       examinee_id_var = examinee_id_var,
                                       group_var = group_var)
   }

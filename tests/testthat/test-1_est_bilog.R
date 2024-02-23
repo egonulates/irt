@@ -15,7 +15,7 @@ skip_if_bilog_exe_not_found <- function(version = 3) {
 
 
 # Set this TRUE to skip all of the tests in this file.
-skip_tests <- TRUE
+skip_tests <- FALSE
 
 target_dir <- "C:/Temp/testthat-bilog"
 
@@ -61,12 +61,15 @@ test_that("est_bilog", {
   n_theta <- sample(1900L:2200L, 1)
   true_ip <- generate_ip(n = n_item, model = "2PL")
   resp <- sim_resp(ip = true_ip, theta = rnorm(n_theta), prop_missing = .1)
+  criterion <- round(runif(1, 0.00001, 0.01), 5)
+  # criterion <- sample(c(0.01, 0.001, 0.0001), 1)
 
   # The following line will run BILOG-MG, estimate 2PL model and put the
   # analysis results under the target directory:
   c1 <- est_bilog(x = resp,
                   model = "2PL",
                   target_dir = target_dir,
+                  criterion = criterion,
                   overwrite = TRUE,
                   bilog_exe_folder = bilog_exe_folder,
                   show_output_on_console = FALSE)
@@ -80,7 +83,27 @@ test_that("est_bilog", {
     expect_identical(nrow(c1$posterior_dist),
                      as.integer(c1$input$num_of_quadrature))
     expect_identical(sum(c1$posterior_dist$weight), 1, tolerance = 0.01)
+
+    # E-M and Newton Cycles
+    expect_identical(colnames(c1$em_cycles), c("cycle", "neg_2_log_likelihood",
+                                               "largest_change"))
+    expect_identical(colnames(c1$newton_cycles),
+                     c("cycle", "neg_2_log_likelihood", "largest_change"))
+    # Largest changes except the last one should be always larger than the
+    # criterion
+    expect_true(all(head(c1$em_cycles$largest_change, nrow(c1$em_cycles) - 1) >
+                      criterion))
+    # Last largest change should be smaller than criterion
+    expect_lt(object = tail(c1$em_cycles$largest_change, 1),
+              expected = criterion)
+    expect_gt(object = tail(c1$em_cycles$largest_change, 2)[1],
+              expected = criterion)
+    expect_lt(object = tail(c1$newton_cycles$largest_change, 1),
+              expected = criterion)
+    expect_identical(tail(c1$newton_cycles$largest_change, 1),
+                     c1$largest_change)
   }
+
 
   # -------------------------------------------------------------------------- #
   # model = "CTT"
@@ -166,12 +189,12 @@ test_that("est_bilog", {
   resp[sample(1:(n_theta*n_item), round(n_theta * n_item * .6))] <- NA
   resp[2:nrow(resp), 2] <- NA
   expect_warning(cfail <- est_bilog(x = resp,
-                                   max_em_cycles = 10,
-                                   criterion = 0.00001,
-                                   target_dir = target_dir,
-                                   overwrite = TRUE,
-                                   bilog_exe_folder = bilog_exe_folder,
-                                   show_output_on_console = FALSE))
+                                    max_em_cycles = 10,
+                                    criterion = 0.00001,
+                                    target_dir = target_dir,
+                                    overwrite = TRUE,
+                                    bilog_exe_folder = bilog_exe_folder,
+                                    show_output_on_console = FALSE))
   expect_false(is.null(cfail$failed_items))
 
 
@@ -207,6 +230,44 @@ test_that("est_bilog", {
   expect_s3_class(output, "bilog_output")
 
 
+
+  # -------------------------------------------------------------------------- #
+  # The program should read directly from the results without the need for
+  # BILOG executable
+  # Test "Example 7 - Read BILOG-MG Output without BILOG-MG"
+  resp <- sim_resp(ip = generate_ip(n = sample(30L:36L, 1), model = "2PL"),
+                   theta = rnorm(sample(1900L:2200L, 1)),
+                   prop_missing = .1)
+  temp_target_dir <- "C:/Temp/Analysis/v172"
+  temp_analysis_name <- "cal_172"
+
+  c1 <- est_bilog(x = resp,
+                  model = "2PL",
+                  analysis_name = temp_analysis_name,
+                  target_dir = temp_target_dir,
+                  overwrite = TRUE,
+                  bilog_exe_folder = bilog_exe_folder,
+                  show_output_on_console = FALSE)
+  temp_rds_fn <- file.path(temp_target_dir, paste0(temp_analysis_name, ".RDS"))
+  file.remove(temp_rds_fn)
+  expect_false(file.exists(temp_rds_fn))
+
+  result <- est_bilog(x = NULL,
+                      target_dir = temp_target_dir,
+                      model = "2PL",
+                      analysis_name = temp_analysis_name,
+                      overwrite = FALSE)
+
+  expect_true(file.exists(temp_rds_fn))
+  expect_identical(unname(c1$ip$a), unname(result$ip$a))
+  expect_identical(unname(c1$ip$b), unname(result$ip$b))
+  expect_identical(c1$em_cycles, result$em_cycles)
+  # TODO: fix this, the scores are not read properly when there is no 'x'
+  # provided to the function. The funciton 'bilog_read_scores' needs to be
+  # fixed.
+  expect_null(result$score)
+  expect_false(is.null(c1$score))
+
   # -------------------------------------------------------------------------- #
   # # Compare 1PL with Rasch
   # ip <- generate_ip(n = 30, model = "1PL")
@@ -222,6 +283,49 @@ test_that("est_bilog", {
 })
 
 
+############################################################################@###
+############################################################################@###
+################### bilog_em_cycles - Read EM Cycle Info #######################
+############################################################################@###
+############################################################################@###
+
+test_that("bilog_em_cycles", {
+  skip_if(skip_tests)
+  skip_if_bilog_exe_not_found()
+
+  # -------------------------------------------------------------------------- #
+  # Check the bug when 'newton = 0'
+  n_item <- sample(30L:36L, 1)
+  n_theta <- sample(1900L:2200L, 1)
+  true_ip <- generate_ip(n = n_item, model = "3PL")
+  resp <- sim_resp(ip = true_ip, theta = rnorm(n_theta), prop_missing = .1)
+  criterion <- round(runif(1, 0.00001, 0.01), 5)
+  # criterion <- sample(c(0.01, 0.001, 0.0001), 1)
+
+  # The following line will run BILOG-MG, estimate 2PL model and put the
+  # analysis results under the target directory:
+  c1 <- est_bilog(x = resp,
+                  model = "3PL",
+                  target_dir = target_dir,
+                  criterion = criterion,
+                  newton = 0,
+                  overwrite = TRUE,
+                  bilog_exe_folder = bilog_exe_folder,
+                  show_output_on_console = FALSE)
+
+  # ph2_file <- file.path(target_dir, "bilog_calibration.PH2")
+  # converged <- TRUE
+  # criterion <- 0.01
+  # max_em_cycles <- 100
+  # newton <- 0
+
+  if (c1$converged) { # these tests are valid only if there is convergence
+    expect_s4_class(c1$ip, "Itempool")
+    expect_s3_class(c1$em_cycles, class = "data.frame")
+    expect_null(c1$newton_cycles)
+  }
+
+})
 
 ############################################################################@###
 ############################################################################@###

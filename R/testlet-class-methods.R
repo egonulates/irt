@@ -270,7 +270,6 @@ setMethod("[[", c("Testlet", "numeric", "missing"),
 #' @param i indices specifying elements to extract or replace.
 #' @param j This will not be used in \code{\link{Testlet-class}} objects.
 #' @param value An \code{Item} object.
-#' @param ... Additional parameters to be passed to the function.
 #'
 #' @return An \code{teslet} object with elements from 'Item' class.
 #'
