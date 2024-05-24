@@ -47,20 +47,21 @@
 #' bilog_create_datafile(x = resp, items = paste0("Item-", 1:7))
 #' }
 #'
-bilog_create_datafile <- function(
-  x,
-  items = NULL,
-  examinee_id_var = NULL,
-  group_var = NULL,
-  reference_group = NULL,
-  target_path = file.path(getwd(), "bilog_data.dat"),
-  create_np_key_file = FALSE,
-  overwrite = FALSE) {
 
+bilog_create_datafile <- function(
+    x,
+    items = NULL,
+    examinee_id_var = NULL,
+    group_var = NULL,
+    reference_group = NULL,
+    target_path = file.path(getwd(), "bilog_data.dat"),
+    create_np_key_file = FALSE,
+    overwrite = FALSE) {
+  
   if (!(inherits(x, c("matrix", "data.frame", "Response_set"))))
     stop("Invalid data file. Data file should be either a matrix, data.frame ",
          "or a 'Response_set' object.", call. = FALSE)
-
+  
   # Check path
   target_path <- normalizePath(target_path, mustWork = FALSE)
   target_dir <- dirname(target_path)
@@ -74,7 +75,7 @@ bilog_create_datafile <- function(
     stop(paste0("The directory for BILOG-MG data file cannot be created at: \n",
                 target_dir, "\nPlease create directory manually."),
          call. = FALSE)
-
+  
   # If x is Response_set, convert it to a data.frame and add examinee_id_var and
   # group_var
   if (is(x, "Response_set")) {
@@ -97,7 +98,7 @@ bilog_create_datafile <- function(
     }
     x <- x_matrix
   }
-
+  
   ### Examinee ID ###
   # Create the examinee_id field, if it is NULL, automatically the row names
   # of the data will be the subject ids.
@@ -107,7 +108,7 @@ bilog_create_datafile <- function(
     length(examinee_id_var) != 1 ||
     !(examinee_id_var %in% 1:ncol(x) ||
       (!is.null(colnames(x)) && examinee_id_var %in% colnames(x)))
-    ))
+  ))
     stop("Invalid 'examinee_id_var' argument. 'examinee_id_var' value should ",
          "be a column number or a column name.", call. = FALSE)
   if (!is.null(examinee_id_var)) {
@@ -126,7 +127,7 @@ bilog_create_datafile <- function(
     stop("Invalid IDs. Number of characters alloted to IDs cannot be more ",
          "than 30 characters.", call. = FALSE)
   examinee_id <- sprintf(paste0("%", num_id_char, "s"), examinee_id)
-
+  
   ### Item IDs ###
   # If items are NULL, then use all of the items.
   if (is.null(items)) {
@@ -134,7 +135,7 @@ bilog_create_datafile <- function(
     if (is.null(colnames(x)))
       colnames(x) <- paste0("Item-", 1:ncol(x))
     items <- colnames(x)
-
+    
     # Make sure to remove examinee_id_var
     if (!is.null(examinee_id_var)) {
       if (examinee_id_var %in% items) {
@@ -156,30 +157,30 @@ bilog_create_datafile <- function(
   if (!is.null(items) && (
     any(duplicated(items)) ||
     !(all(items %in% colnames(x)) || all(items %in% 1:ncol(x)) )
-    ))
+  ))
     stop("Invalid 'items' argument. The elements of 'items' argument should ",
          "be a character vector of column names of the 'x'. All elements ",
          "should be unique.", call. = FALSE)
-
-
+  
+  
   ### Prepare responses ###
   resp <- apply(x[, items], 2, as.character)
   # Check if the responses are valid:
   if (!all(sapply(unique(as.vector(resp)), function(x) is.na(x) ||
-                  x %in% c("0", "1"))))
+                  x %in% c("0", "1", "9"))))
     stop("Invalid response data. The response values should be either 0, 1 ",
          "or missing (i.e. NA).", call. = FALSE)
   # Convert missing data to "."
   resp <- ifelse(is.na(resp), ".", resp)
   num_of_items <- ncol(resp)
   resp <- apply(resp, 1, paste0, collapse = "")
-
+  
   ### Group ###
   # group: In BILOG-MG, "the group identifier has to be a single digit
   # (integer), starting with 1."
   group_info <- bilog_create_group_info(x = x, group_var = group_var,
-                                  reference_group = reference_group)
-
+                                        reference_group = reference_group)
+  
   # # group: In BILOG-MG, "the group identifier has to be a single digit
   # # (integer), starting with 1."
   # group <- NULL
@@ -222,18 +223,18 @@ bilog_create_datafile <- function(
   #   groups <- data.frame(name = unique_groups, code = unique(group),
   #                        n = group_sizes$Freq)
   # }
-
+  
   ### Prepare the data file and formal statement ###
   # Add ID
   data_text <- paste0(examinee_id, " ")
   formal_statement <- paste0("(", num_id_char, "A1", ",", "1X")
-
+  
   # Add group if there is
   if (!is.null(group_info$group)) {
     data_text <- paste0(data_text, group_info$group, " ")
     formal_statement <- paste0(formal_statement,  ",I1", ",1X")
   }
-
+  
   # Create not-presented key file:
   if (create_np_key_file) {
     np_text <- paste0(
@@ -243,7 +244,7 @@ bilog_create_datafile <- function(
       ifelse(group_info$num_of_groups == 0, "", "  "),
       # Add items
       paste0(rep(".", num_of_items), collapse = ""))
-
+    
     np_key_file_path <- file.path(
       target_dir,
       paste0(gsub("\\.(.*)$", "", basename(target_path)), ".NFN"))
@@ -251,13 +252,34 @@ bilog_create_datafile <- function(
       writeLines(text = np_text, con = np_key_file_path)
   } else
     np_key_file_path <- NULL
-
+  
+  if (!all(sapply(unique(as.vector(resp)), function(x) is.na(x) ||
+                  x %in% c("0", "1", "9")))){create_om_key_file=TRUE}
+  
+  # Create ommited key file:
+  if (create_om_key_file) {
+    om_text <- paste0(
+      # Add examinee_id
+      paste0(rep(" ", num_id_char), collapse = ""), " ",
+      # Add groups
+      ifelse(group_info$num_of_groups == 0, "", "  "),
+      # Add items
+      paste0(rep("9", num_of_items), collapse = ""))
+    
+    om_key_file_path <- file.path(
+      target_dir,
+      paste0(gsub("\\.(.*)$", "", basename(target_path)), ".OFN"))
+    if (overwrite || !file.exists(om_key_file_path))
+      writeLines(text = om_text, con = om_key_file_path)
+  } else
+    om_key_file_path <- NULL
+  
   # Add response data:
   data_text <- paste0(data_text, resp)
   formal_statement <- paste0(formal_statement,  ",", num_of_items, "A1)")
-
+  
   if (overwrite || !file.exists(target_path)) writeLines(data_text, target_path)
-
+  
   return(list(x = x,
               formal_statement = formal_statement,
               data_file_path = target_path,
@@ -266,11 +288,9 @@ bilog_create_datafile <- function(
               group_info = group_info$group_info,
               reference_group = group_info$reference_group,
               np_key_file_path = np_key_file_path,
-              num_id_char = num_id_char))
+              num_id_char = num_id_char,
+              om_key_file_path = om_key_file_path))
 }
-
-
-
 
 #' Create group information
 #'
@@ -1894,11 +1914,17 @@ est_bilog <- function(
     # Add number of alternatives
     if (!is.null(num_of_alternatives) && is.numeric(num_of_alternatives))
       temp_text <- paste0(temp_text, ",\n", tab, "NALT = ", num_of_alternatives)
-
+    
+    # Add OFNAME:
+    temp_text <- paste0(
+      temp_text, ",\n", wrap_text(paste0(tab, "OFNAME = '",
+                                         normalizePath(data_output$om_key_file_path))))
+    
     # Add NFNAME:
     temp_text <- paste0(
       temp_text, ",\n", wrap_text(paste0(tab, "NFNAME = '",
       normalizePath(data_output$np_key_file_path), "',\n")))
+    
     # Add NIDCHAR
     temp_text <- paste0(temp_text, tab,
                         "NIDCHAR = ", data_output$num_id_char)
