@@ -1922,7 +1922,7 @@ est_bilog <- function(
     
     # Add NFNAME:
     temp_text <- paste0(
-      temp_text, ",\n", wrap_text(paste0(tab, "NFNAME = '",
+      temp_text, "',\n", wrap_text(paste0(tab, "NFNAME = '",
       normalizePath(data_output$np_key_file_path), "',\n")))
     
     # Add NIDCHAR
