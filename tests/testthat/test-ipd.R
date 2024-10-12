@@ -43,6 +43,18 @@ test_that("ipd_robustz", {
   expect_identical(result$a$robust_z, result_not_exclude$a$robust_z)
   expect_true(all(result$b$robust_z != result_not_exclude$b$robust_z))
 
+  # -------------------------------------------------------------------------- #
+  # Robust-z with Rasch Model - this should raise an error since Robust-z
+  # calculation requires
+  n <- 20
+  ip1 <- generate_ip(n = n, model = "Rasch")
+  ipdf1 <- ipdf2 <- as.data.frame(ip1)
+  ipdf2$b <- ipdf1$b + runif(n, -0.25, .25)
+  ipdf2$b[n] <- ipdf1$b[n] - 1
+  ip2 <- itempool(ipdf2)
+  expect_error(
+    object = ipd(ip1 = ip1, ip2 = ip2, method = "robust-z"),
+    regexp = "Robust-z statistic cannot be calculated for these items")
 
   # -------------------------------------------------------------------------- #
   # Robust-z with non-null anchor_items

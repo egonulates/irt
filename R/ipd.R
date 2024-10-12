@@ -250,7 +250,6 @@ ipd_robustz <- function(ip1, ip2, anchor_item_ids = NULL, alpha = 0.01,
   ip1_df <- as.data.frame(ip1)
   ip2_df <- as.data.frame(ip2)
 
-
   # All items are assumed to be anchor items, then
   # Make sure the item pool sizes and item pool item_ids are matching.
   if (is.null(anchor_item_ids)) {
@@ -281,7 +280,9 @@ ipd_robustz <- function(ip1, ip2, anchor_item_ids = NULL, alpha = 0.01,
   if ((is.null(a2) || any(is.na(a2))) ||
       (is.null(a1) || any(is.na(a1))))
     stop("In the item pools, there are some items that do not have 'a' ",
-         "parameters.")
+         "parameters. Robust-z statistic cannot be calculated for these items.",
+         " Please remove the items without 'a' parameters and rerun the ",
+         "function.")
   a_diff <- log(a2) - log(a1)
   temp_z <- (a_diff - stats::median(a_diff, na.rm = TRUE)) /
     (0.74 * stats::IQR(a_diff, na.rm = TRUE, type = iqr_type))
