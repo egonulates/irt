@@ -1145,8 +1145,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // resp_loglik_bare_testlet_cpp
-double resp_loglik_bare_testlet_cpp(Rcpp::NumericVector resp, double theta, Rcpp::S4& testlet, int derivative);
-RcppExport SEXP _irt_resp_loglik_bare_testlet_cpp(SEXP respSEXP, SEXP thetaSEXP, SEXP testletSEXP, SEXP derivativeSEXP) {
+double resp_loglik_bare_testlet_cpp(Rcpp::NumericVector resp, double theta, Rcpp::S4& testlet, int derivative, double theta_lower_bound, double theta_upper_bound, double theta_bin_width);
+RcppExport SEXP _irt_resp_loglik_bare_testlet_cpp(SEXP respSEXP, SEXP thetaSEXP, SEXP testletSEXP, SEXP derivativeSEXP, SEXP theta_lower_boundSEXP, SEXP theta_upper_boundSEXP, SEXP theta_bin_widthSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -1154,7 +1154,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
     Rcpp::traits::input_parameter< Rcpp::S4& >::type testlet(testletSEXP);
     Rcpp::traits::input_parameter< int >::type derivative(derivativeSEXP);
-    rcpp_result_gen = Rcpp::wrap(resp_loglik_bare_testlet_cpp(resp, theta, testlet, derivative));
+    Rcpp::traits::input_parameter< double >::type theta_lower_bound(theta_lower_boundSEXP);
+    Rcpp::traits::input_parameter< double >::type theta_upper_bound(theta_upper_boundSEXP);
+    Rcpp::traits::input_parameter< double >::type theta_bin_width(theta_bin_widthSEXP);
+    rcpp_result_gen = Rcpp::wrap(resp_loglik_bare_testlet_cpp(resp, theta, testlet, derivative, theta_lower_bound, theta_upper_bound, theta_bin_width));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1415,7 +1418,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_irt_resp_loglik_bare_item_cpp", (DL_FUNC) &_irt_resp_loglik_bare_item_cpp, 4},
     {"_irt_resp_loglik_item_cpp", (DL_FUNC) &_irt_resp_loglik_item_cpp, 4},
     {"_irt_resp_loglik_btm_integral_cpp", (DL_FUNC) &_irt_resp_loglik_btm_integral_cpp, 6},
-    {"_irt_resp_loglik_bare_testlet_cpp", (DL_FUNC) &_irt_resp_loglik_bare_testlet_cpp, 4},
+    {"_irt_resp_loglik_bare_testlet_cpp", (DL_FUNC) &_irt_resp_loglik_bare_testlet_cpp, 7},
     {"_irt_resp_loglik_testlet_cpp", (DL_FUNC) &_irt_resp_loglik_testlet_cpp, 4},
     {"_irt_resp_loglik_bare_itempool_cpp", (DL_FUNC) &_irt_resp_loglik_bare_itempool_cpp, 4},
     {"_irt_resp_loglik_itempool_cpp", (DL_FUNC) &_irt_resp_loglik_itempool_cpp, 4},

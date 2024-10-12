@@ -220,12 +220,22 @@ double resp_loglik_btm_integral_cpp(double u, double mu, double sigma,
 //'    0 = No derivative
 //'    1 = First derivative
 //'    2 = Second derivative
+//' @param theta_lower_bound For Rasch Testlet Model, the lower bound value of
+//'   the integration
+//' @param theta_upper_bound For Rasch Testlet Model, the upper bound value of
+//'   the integration
+//' @param theta_bin_width For Rasch Testlet Model, the bin width of the steps
+//'   that the integration will proceed.
 //'
 //' @noRd
 //'
 // [[Rcpp::export]]
 double resp_loglik_bare_testlet_cpp(Rcpp::NumericVector resp, double theta,
-                                    Rcpp::S4& testlet, int derivative = 0)
+                                    Rcpp::S4& testlet, int derivative = 0,
+                                    double theta_lower_bound = -15,
+                                    double theta_upper_bound = 15,
+                                    double theta_bin_width = 0.01
+                                    )
 {
   double output = 0;
   std::string model = as<std::string>(testlet.slot("model"));
@@ -257,12 +267,12 @@ double resp_loglik_bare_testlet_cpp(Rcpp::NumericVector resp, double theta,
       }
     } else {
       Rcpp::NumericVector u;
-      double start = -4.5;
-      double end = 4.5;
-      double step = 0.1;
-      while (start < end) {
-        start += step;
-        u.push_back(start);
+      // double theta_lower_bound = -4.5;
+      // double theta_upper_bound = 4.5;
+      // double theta_bin_width = 0.1;
+      while (theta_lower_bound < theta_upper_bound) {
+        theta_lower_bound += theta_bin_width;
+        u.push_back(theta_lower_bound);
       }
       int n_quad = u.size();
 
