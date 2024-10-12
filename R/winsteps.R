@@ -75,7 +75,7 @@ ws_create_anchor_file <- function(anchor_info, target_dir, analysis_name,
 ############################# ws_extract_data ##############################@###
 ############################################################################@###
 
-#' Extract  response/ID data from dataset
+#' Extract response/ID data from dataset
 #'
 #' @description This function extracts following pieces of information from the
 #'   given data set:
@@ -111,7 +111,7 @@ ws_extract_data <- function(x, items = NULL, examinee_id_var = NULL,
     } else {
       temp <- which(colnames(remaining_data) == examinee_id_var)
     }
-    examinee_ids <- remaining_data[, temp]
+    examinee_ids <- remaining_data[[temp]]
     remaining_data <- remaining_data[, -temp, drop = FALSE]
   }
   # Set default examinee IDs
@@ -187,7 +187,7 @@ ws_create_data_file <- function(x,
   ws_data <- ws_extract_data(x = x, items = items,
                              examinee_id_var = examinee_id_var,
                              additional_vars = additional_vars)
-  resp_data <- ws_data$resp
+  resp_data <- as.data.frame(ws_data$resp)
   output$num_of_items <- ncol(resp_data)
   output$data_file_name <- data_fn
   # Starting column of item responses
@@ -199,7 +199,7 @@ ws_create_data_file <- function(x,
                ")\n"))
   }
   resp_codes <- c()
-  for(i in 1:ncol(resp_data)) {
+  for (i in 1:ncol(resp_data)) {
     resp_codes <- c(resp_codes, names(table(resp_data[, i], useNA = "no")))
   }
   resp_codes <- sort(unique(resp_codes))
@@ -207,6 +207,8 @@ ws_create_data_file <- function(x,
   #   resp_data, function(y) names(table(y, useNA = "no"))))))
 
   output$resp_codes <- resp_codes
+
+  output$polytomous <- length(resp_codes) > 2
   # Maximum with of a response option
   max_resp_width <- max(nchar(resp_codes))
   output$max_resp_width <- max_resp_width
@@ -313,12 +315,20 @@ ws_create_data_file <- function(x,
 ws_create_control_file <- function(
     data_fn,
     item_fn,
+    isfile_fn = NULL,
+    sfile_fn = NULL,
     person_fn = NULL,
     anchor_fn = NULL,
     target_dir = getwd(),
     control_fn = "winsteps_analysis_control_file.txt",
     title = "Winsteps Analysis",
     item_ids = NULL,
+    polytomous = FALSE,
+    custom_args = c(
+      "TOTALSCORE=YES ; Include extreme responses in reported scores",
+      "UDECIMALS=4 ; Number of decimal places reported",
+      "PTBISERIAL=YES ; Raw score point-biserial excluding extremes",
+      "PVALUE=YES ; report proportion-correct-values"),
     item_start_col = 1,
     num_of_items = 0,
     person_start_col = 0,
@@ -329,6 +339,30 @@ ws_create_control_file <- function(
     resp_codes = c("0", "1")
     ) {
 
+
+  if (!is_atomic_vector(custom_args, class = "character")) {
+    stop("'custom_args' argument in 'est_winsteps()' function should be a ",
+         "vector of strings. ", call. = FALSE)
+  }
+
+  # If data is polytomous, automatically add "MODELS=R" and "ISGROUPS=0" unless
+  # they are already defined in 'custom_args'
+  if (polytomous) {
+    # If "GROUPS" is not already exists, add "MODELS = R"
+    if (!any(grepl("^\\s*models\\s*=", custom_args, ignore.case = TRUE))) {
+      custom_args <- c(
+        custom_args,
+        paste0("MODELS=R; the rating-scale family of models including ",
+               "Masters Partial-Credit Model"))
+    }
+    if (!(any(grepl("^\\s*groups\\s*=", custom_args, ignore.case = TRUE)) |
+          any(grepl("^\\s*isgroups\\s*=", custom_args, ignore.case = TRUE))
+          )) {
+      custom_args <- c(custom_args,
+                       "ISGROUPS=0; Masters' Partial Credit Model")
+    }
+  }
+
   syntax_text <- c(
     "&INST",
     paste0("TITLE= \"", title, "\""),
@@ -337,15 +371,20 @@ ws_create_control_file <- function(
     paste0("DATA = \"", data_fn, "\" ; Data file name"),
     paste0("ITEM1 = ", item_start_col, " ; Starting column of item responses"),
     paste0("NI = ", num_of_items, " ; Number of items"),
+
+    paste0("CSV = Yes ; facilitate importing the IFILE=, ISFILE=, PFILE=, ",
+           "and SFILE= files into a CSV file"),
+
     paste0("NAME1 = ", person_start_col,
            " ; Starting column for person label in data record"),
     paste0("NAMLEN = ", person_text_len, " ; Length of person label"),
-    paste0("UDECIMALS = ", 4, " ; Number of decimal places reported"),
+    # paste0("UDECIMALS = ", 4, " ; Number of decimal places reported"),
     paste0("XWIDE = ", max_resp_width,
            " ; Matches the widest data value observed"),
     paste0("CODES = \"", paste0(resp_codes, collapse = " "),
            "\" ; possible values of response data"),
-    paste0("TOTALSCORE = Yes ; Include extreme responses in reported scores"),
+    custom_args,
+    # paste0("TOTALSCORE = Yes ; Include extreme responses in reported scores"),
     paste0("; Person Label variables: columns in label: columns in line")
     )
 
@@ -354,6 +393,26 @@ ws_create_control_file <- function(
     syntax_text,
     paste0("IFILE = \"", item_fn, "\" ; Item parameter estimates file name")
     )
+
+  # Item Structure File for Polytomous items
+  if (!is.null(isfile_fn)) {
+    syntax_text <- c(
+      syntax_text,
+      paste0("ISFILE = \"", isfile_fn,
+             "\" ; Item Structure file name for polytomous items")
+      )
+  }
+
+  # Item Structure File for Polytomous items
+  if (!is.null(sfile_fn)) {
+    syntax_text <- c(
+      syntax_text,
+      paste0("SFILE = \"", sfile_fn,
+             "\" ; Category structure-threshold output file")
+      )
+  }
+
+
   # Person parameters file name
   if (!is.null(person_fn)) {
     syntax_text <- c(
@@ -462,7 +521,7 @@ ws_read_fw_data <- function(path) {
   while (any(grepl("^\\s*$", header))) {
     for (i in 1:(length(header) - 1)) {
       if (grepl("^\\s*$", header[i])) {
-        header[i+1] <- paste0(header[i], header[i+1])
+        header[i + 1] <- paste0(header[i], header[i+1])
         header <- header[-i]
         break
       }
@@ -479,18 +538,18 @@ ws_read_fw_data <- function(path) {
 }
 
 ############################################################################@###
-############################# ws_read_item_file ############################@###
+############################# ws_read_item_file_fwf ########################@###
 ############################################################################@###
 
-#' Read Raw Winsteps Item File
+#' Read Raw Winsteps Item File - Fixed Width File
 #'
 #' @noRd
 #'
-ws_read_item_file <- function(target_dir, item_fn) {
+ws_read_item_file_fwf <- function(target_dir, item_fn) {
   path <- file.path(target_dir, item_fn)
   if (!file.exists(path)) {
     stop("Invalid path. Item file cannot be found inthe following path:\n",
-         "\"  ", path, "\"")
+         "  \"", path, "\"")
   }
   output <- ws_read_fw_data(path)
   # Remove trailing spaces from the item ID
@@ -499,6 +558,236 @@ ws_read_item_file <- function(target_dir, item_fn) {
   # Column names can be found here: https://www.winsteps.com/winman/ifile.htm
   return(output)
 }
+
+############################################################################@###
+############################# ws_read_item_file_csv ########################@###
+############################################################################@###
+
+#' Read Raw Winsteps Item File - CSV File
+#'
+#' @noRd
+#'
+ws_read_item_file_csv <- function(target_dir, item_fn) {
+  path <- file.path(target_dir, item_fn)
+  if (!file.exists(path)) {
+    stop("Invalid path. Item file cannot be found inthe following path:\n",
+         "  \"", path, "\"")
+  }
+  output <- utils::read.csv(path, skip = 1)
+
+  # Column names can be found here: https://www.winsteps.com/winman/ifile.htm
+  return(output)
+}
+
+
+############################################################################@###
+############################# ws_read_sfile_csv ###########################@###
+############################################################################@###
+
+#' Read Polytomous Item Threshold Values
+#'
+#' This file can be used as an input file of the anchored polytomous items.
+#'
+#' @noRd
+#'
+ws_read_sfile_csv <- function(target_dir, sfile_fn = NULL) {
+  path_sfile_fn <- file.path(target_dir, sfile_fn)
+  if (is.null(sfile_fn) ||
+      length(path_sfile_fn) == 0 ||
+      !file.exists(path_sfile_fn)
+      ) {
+    return(NULL)
+  }
+  output_sfile <- utils::read.csv(file = path_sfile_fn, skip = 2)
+  colnames(output_sfile) <- c("ENTRY", "category", "threshold")
+  return(output_sfile)
+}
+
+
+############################################################################@###
+############################# ws_read_isfile_csv ###########################@###
+############################################################################@###
+
+#' Read Polytomous Items from Structure Files
+#'
+#' @noRd
+#'
+ws_read_isfile_csv <- function(target_dir, isfile_fn = NULL) {
+  path_isfile_fn <- file.path(target_dir, isfile_fn)
+  # path_sfile_fn <- file.path(target_dir, sfile_fn)
+  if (is.null(isfile_fn) ||
+      # is.null(sfile_fn) ||
+      length(path_isfile_fn) == 0 ||
+      # length(path_sfile_fn) == 0 ||
+      # !file.exists(path_sfile_fn) ||
+      !file.exists(path_isfile_fn)
+      ) {
+    return(NULL)
+  }
+  output_isfile <- utils::read.csv(file = path_isfile_fn, skip = 1)
+
+  # Sometimes there might be items with errors
+  if (any(grepl(";", output_isfile$ENTRY))) {
+    warning(paste0("There might be a problem with the parameter ",
+                   "estimation of the following item(s):\n",
+                   paste0(output_isfile$ENTRY[grepl(";", output_isfile$ENTRY)],
+                          collapse = "\n")))
+    output_isfile$ENTRY <- as.integer(gsub(";|\\s", "", output_isfile$ENTRY))
+  }
+
+  return(output_isfile)
+}
+
+
+############################################################################@###
+############################# ws_read_isfile_fwf ###########################@###
+############################################################################@###
+
+#' Read Raw Winsteps Item Structure File - Fixed-Width Format and create
+#' polytomous parameters
+#'
+#' Currently not used
+#'
+#' @noRd
+#'
+ws_read_isfile_fwf <- function(target_dir, isfile_fn) {
+  path <- file.path(target_dir, isfile_fn)
+  if (is.null(isfile_fn) || length(path) == 0 || !file.exists(path)) {
+    return(NULL)
+    # stop("Invalid path. Item structure file (ISFILE) cannot be found in the ",
+    #      "following path:\n", "  \"", path, "\"")
+  }
+  output <- ws_read_fw_data(path)
+  return(output)
+}
+
+
+
+############################################################################@###
+############################# ws_read_poly_pars_csv ########################@###
+############################################################################@###
+
+#' Read Polytomous Items from Structure Files
+#'
+#' @noRd
+#'
+ws_read_poly_pars_csv <- function(target_dir, item_pars, isfile_fn = NULL,
+                                  polytomous_model = "PCM") {
+  output_isfile <- ws_read_isfile_csv(target_dir = target_dir,
+                                      isfile_fn = isfile_fn)
+  if (is.null(output_isfile)) return(output_isfile)
+
+  n_categories <- sum(grepl("^MEASURE", colnames(output_isfile)))
+
+  output <- output_isfile[, grepl("^ENTRY$|^MEASURE|^MAX$",
+                                  colnames(output_isfile))]
+
+  if (polytomous_model == "PCM") {
+    colnames(output) <- c("ENTRY", "MAX", paste0("b", seq(1, n_categories, 1)))
+
+    if (n_categories > 1) {
+      for (i in seq(n_categories, 2)) {
+        col_no <- which(colnames(output) == paste0("b", i))
+        output[which(output[, "MAX"] < i), col_no] <- NA
+      }
+    }
+    output$model <- NA
+    if (any(output$MAX <= 1)) {
+      output$b <- output$b1
+      output[output$MAX > 1, "b"] <- NA
+      output[output$MAX <= 1, "b1"] <- NA
+      output[output$MAX <= 1, "model"] <- "Rasch"
+    }
+
+    output[output$MAX > 1, "model"] <- "PCM"
+  } else if (polytomous_model == "GPCM2") {
+    colnames(output) <- c("ENTRY", "MAX", paste0("d", seq(1, n_categories, 1)))
+
+    output <- merge(output, item_pars[, c("ENTRY", "MEASURE")], by = "ENTRY")
+    output[["D"]] <- 1
+    output[["a"]] <- 1
+    colnames(output)[colnames(output) == "MEASURE"] <- "b"
+
+    if (n_categories > 1) {
+      for (i in seq(n_categories, 2)) {
+        col_no <- which(colnames(output) == paste0("d", i))
+        output[which(output[, "MAX"] < i), col_no] <- NA
+      }
+
+      for (i in 1:n_categories) {
+        output[[paste0("d", i)]] <- output[[paste0("d", i)]] - output[["b"]]
+      }
+    }
+
+    output$model <- NA
+    if (any(output$MAX <= 1)) {
+      # output$b <- output$b1
+      # output[output$MAX > 1, "b"] <- NA
+      output[output$MAX <= 1, "d1"] <- NA
+      output[output$MAX <= 1, "a"] <- NA
+      output[output$MAX <= 1, "D"] <- NA
+      output[output$MAX <= 1, "model"] <- "Rasch"
+    }
+    output[output$MAX > 1, "model"] <- "GPCM2"
+  } else {
+    stop("Invalid 'model' argument. Model Should be either 'PCM' or 'GPCM2'.")
+  }
+
+
+
+  return(output)
+}
+
+
+
+
+############################################################################@###
+############################# ws_read_poly_pars_fwf ########################@###
+############################################################################@###
+
+#' Read Raw Winsteps Item Structure File - Fixed-Width Format
+#'
+#' Currently not used
+#'
+#' @noRd
+#'
+ws_read_poly_pars_fwf <- function(target_dir, isfile_fn) {
+  output <- ws_read_isfile_fwf(target_dir = target_dir, isfile_fn = isfile_fn)
+  if (is.null(output)) return(NULL)
+
+  output <- output[, grepl("^ENTRY$|^MEASURE|^MAX$", colnames(output))]
+
+  # Sometimes there might be items with errors
+  if (any(grepl(";", output$ENTRY))) {
+    warning(paste0("There might be a problem with the parameter ",
+                   "estimation of the following item(s):\n",
+                   paste0(output$ENTRY[grepl(";", output$ENTRY)],
+                          collapse = "\n")))
+    output$ENTRY <- as.integer(gsub(";|\\s", "", output$ENTRY))
+  }
+
+  n_categories <- sum(grepl("^MEASURE", colnames(output)))
+  colnames(output) <- c("ENTRY", "MAX", paste0("b", seq(1, n_categories, 1)))
+
+  if (n_categories > 1) {
+    for (i in seq(n_categories, 2)) {
+      col_no <- which(colnames(output) == paste0("b", i))
+      output[which(output[, "MAX"] < i), col_no] <- NA
+    }
+  }
+  output$model <- NA
+  if (any(output$MAX <= 1)) {
+    output$b <- output$b1
+    output[output$MAX > 1, "b"] <- NA
+    output[output$MAX <= 1, "b1"] <- NA
+    output[output$MAX <= 1, "model"] <- "Rasch"
+  }
+
+  output[output$MAX > 1, "model"] <- "PCM"
+
+  return(output)
+}
+
 
 
 ############################################################################@###
@@ -511,36 +800,55 @@ ws_read_item_file <- function(target_dir, item_fn) {
 #' @description This function creates an \code{Itempool} object from Winsteps
 #'   calibration results.
 #'
+#' @param item_pars The raw contents of the item parameter file.
+#' @param poly_pars The raw contents of the item structure file.
+#'
 #' @noRd
 #'
-ws_create_itempool <- function(item_pars) {
-  head(item_pars)
-  column_names <- data.frame(
-    old_name = c("ENTRY", "MEASURE", "ST", "COUNT", "SCORE", "MODLSE",
-                 "IN.MSQ", "INZSTD", "OUTMSQ", "OUTZST", "DISPL", "PTMA",
-                 "WEIGHT", "OBSMA", "EXPMA", "PMA.E", "RMSR", "WMLE",
-                 "INDF", "OUTDF", "G", "M", "R", "NAME"),
-    new_name = c("ENTRY", "b", "ST", "COUNT", "SCORE", "MODLSE",
-                 "IN.MSQ", "INZSTD", "OUTMSQ", "OUTZST", "DISPL", "PTMA",
-                 "WEIGHT", "OBSMA", "EXPMA", "PMA.E", "RMSR", "WMLE",
-                 "INDF", "OUTDF", "G", "M", "R", "item_id")
-    )
-  names(item_pars)[match(column_names$old_name,
-                         names(item_pars))] <- column_names$new_name
-  return(itempool(item_pars, model = "Rasch"))
+ws_create_itempool <- function(item_pars, poly_pars = NULL) {
+  # head(item_pars)
+  # column_names <- data.frame(
+  #   old_name = c("ENTRY", "MEASURE", "ST", "COUNT", "SCORE", "MODLSE", "ERROR",
+  #                "IN.MSQ", "INZSTD", "OUTMSQ", "OUTZST", "DISPL", "PTMA",
+  #                "WEIGHT", "OBSMA", "EXPMA", "PMA.E", "RMSR", "WMLE",
+  #                "INDF", "OUTDF", "G", "M", "R", "NAME"),
+  #   new_name = c("ENTRY", "b", "ST", "COUNT", "SCORE", "MODLSE", "MODLSE",
+  #                "IN.MSQ", "INZSTD", "OUTMSQ", "OUTZST", "DISPL", "PTMA",
+  #                "WEIGHT", "OBSMA", "EXPMA", "PMA.E", "RMSR", "WMLE",
+  #                "INDF", "OUTDF", "G", "M", "R", "item_id")
+  #   )
+
+  col_names_recodes <- c(MODLSE = "MODLSE", ERROR = "MODLSE",
+                         # MEASURE = "b",
+                         NAME = "item_id")
+  temp_match <- match(names(col_names_recodes), names(item_pars))
+  col_names_recodes <- col_names_recodes[!is.na(temp_match)]
+  temp_match <- temp_match[!is.na(temp_match)]
+  names(item_pars)[temp_match] <- col_names_recodes
+  # Keep 'MEASURE' in case there are polytomous items in the item pool
+  item_pars[["b"]] <- item_pars[["MEASURE"]]
+  if (is.null(poly_pars)) {
+    ip <- itempool(item_pars, model = "Rasch")
+  } else {
+    ip_df <- merge(x = item_pars[, colnames(item_pars) != "b"],
+                   y = poly_pars,
+                   by = "ENTRY",
+                   all.x = TRUE)
+    ip <- itempool(ip_df)
+  }
+  return(ip)
 }
 
 
-
 ############################################################################@###
-############################# ws_read_person_file ##########################@###
+############################# ws_read_person_file_fwf ######################@###
 ############################################################################@###
 
-#' Read Raw Winsteps Person File
+#' Read Raw Winsteps Person File - Fixed-Width-Format
 #'
 #' @noRd
 #'
-ws_read_person_file <- function(target_dir, person_fn) {
+ws_read_person_file_fwf <- function(target_dir, person_fn) {
   path <- file.path(target_dir, person_fn)
   if (!file.exists(path)) {
     return(NULL)
@@ -549,6 +857,30 @@ ws_read_person_file <- function(target_dir, person_fn) {
   output <- ws_read_fw_data(path)
 
   # Remove trailing spaces from the item ID
+  output[["NAME"]] <- gsub("^[ ]?", "", output[["NAME"]])
+
+  # Column names can be found here: https://www.winsteps.com/winman/ifile.htm
+  return(output)
+}
+
+
+############################################################################@###
+############################# ws_read_person_file_csv ######################@###
+############################################################################@###
+
+#' Read Raw Winsteps Person File - CSV
+#'
+#' @noRd
+#'
+ws_read_person_file_csv <- function(target_dir, person_fn) {
+  path <- file.path(target_dir, person_fn)
+  if (!file.exists(path)) {
+    return(NULL)
+  }
+
+  output <- utils::read.csv(file = path, skip = 1)
+
+  # Remove trailing spaces from the examinee ID
   output[["NAME"]] <- gsub("^[ ]?", "", output[["NAME"]])
 
   # Column names can be found here: https://www.winsteps.com/winman/ifile.htm
@@ -593,14 +925,34 @@ ws_read_person_file <- function(target_dir, person_fn) {
 #'   default value is \code{NULL}, meaning no additional columns will be added
 #'   to the Winsteps data file. Note that if \code{items} is \code{NULL}, all
 #'   variables in the dataset will be treated as response data.
+#' @param custom_args A vector containing string elements to be included in
+#'   the Winsteps control file. Each element in the vector will be written on a
+#'   separate line. Ensure that the vector's contents adhere to valid Winsteps
+#'   syntax. The default value is:
+#'   \code{c("TOTALSCORE = Yes ; Include extreme responses in reported scores", "UDECIMALS = 4 ; Number of decimal places reported", "PTBISERIAL=YES ; Raw score point-biserial excluding extremes", "PVALUE = YES ; report proportion-correct-values")}.
 #' @param anchor_info A matrix or data frame containing the sequence number and
 #'   difficulty values of anchor items. The anchor matrix should have at least
 #'   two columns: (1) either \code{seq}, indicating the column numbers of the
 #'   anchor items in the response matrix, or \code{item_id} column containing
 #'   the IDs of anchor items, and (2) \code{b}, the item difficulty values. The
 #'   default value is \code{NULL}, meaning no anchor items are used.
+#'
+#'   Here are some additional commands to consider adding:
+#'   \itemize{
+#'     \item \code{"EXTRSCORE= 0.5 ; extreme score correction for extreme measures"}
+#'     \item \code{"MPROX=10 ; maximum number of PROX iterations"}
+#'     \item \code{"CONVERGE=L ; only logit change is used for convergence -- also specify 'LCONV= ' "}
+#'     \item \code{"LCONV=0.001 logit change at convergence -- also specify 'CONVERGE=L'"}
+#'   }
+#' @param polytomous_model A string value that specifies the IRT model for which
+#'   the polytomous items will be written. It accepts two values: 'PCM' for the
+#'   Partial Credit Model and 'GPCM2' for the Reparameterized Generalized
+#'   Partial Credit Model. The default value is "PCM".
 #' @param overwrite A logical value. If \code{TRUE}, existing control/data files
 #'   will be overwritten. The default value is \code{TRUE}.
+#' @param read_person_pars A logical value indication whether to read the
+#'   person parameters created (\code{TRUE}) or not (\code{FALSE}). The default
+#'   value is \code{TRUE}.
 #' @param winsteps_exe_folder The directory containing the Winsteps executable.
 #'   The default value is \code{file.path("C:/Winsteps")}.
 #' @param verbose If \code{TRUE}, the program will print intermediate steps.
@@ -635,11 +987,25 @@ est_winsteps <- function(
   items = NULL,
   examinee_id_var = NULL,
   additional_vars = NULL,
+  custom_args = c("TOTALSCORE=YES ; Include extreme responses in reported scores",
+                  "UDECIMALS=4 ; Number of decimal places reported",
+                  "PTBISERIAL=YES ; Raw score point-biserial excluding extremes",
+                  "PVALUE=YES ; report proportion-correct-values"),
   anchor_info = NULL,
+  polytomous_model = c("PCM", "GPCM2"),
   overwrite = TRUE,
   winsteps_exe_folder = file.path("C:/Winsteps"),
+  read_person_pars = TRUE,
   verbose = TRUE
   ) {
+
+  if (!is_single_value(x = target_dir, class = "character")) {
+    stop("Invalid 'target_dir' value. ")
+  }
+  if (!is_single_value(x = analysis_name, class = "character")) {
+    stop("Invalid 'analysis_name' value. ")
+  }
+  polytomous_model <- match.arg(polytomous_model)
 
   # The location where all the output will be written
   output_rds_fn <- file.path(target_dir, paste0(analysis_name, ".RDS"))
@@ -671,8 +1037,15 @@ est_winsteps <- function(
                                        target_dir = target_dir,
                                        analysis_name = analysis_name)
 
-    item_fn <- paste0(analysis_name, "_item_pars.txt")
-    person_fn <- paste0(analysis_name, "_person_pars.txt")
+    item_fn <- paste0(analysis_name, "_item_pars.csv")
+    if (dt_pars$polytomous) {
+      isfile_fn <- paste0(analysis_name, "_item_structure.csv")
+      sfile_fn <- paste0(analysis_name, "_category_threshold.csv")
+    } else {
+      isfile_fn <- NULL
+      sfile_fn <- NULL
+    }
+    person_fn <- paste0(analysis_name, "_person_pars.csv")
     control_fn <- paste0(analysis_name, "_control_file.txt")
     output_fn <- paste0(analysis_name, "_output_file.txt")
     batch_fn <- paste0(analysis_name, "_batch_file.bat")
@@ -681,12 +1054,16 @@ est_winsteps <- function(
     ws_create_control_file(
       data_fn = dt_pars$data_file_name,
       item_fn = item_fn,
+      isfile_fn = isfile_fn,
+      sfile_fn = sfile_fn,
       person_fn = person_fn,
       anchor_fn = anchor_fn,
       target_dir = target_dir,
       control_fn = control_fn,
       title = "Winsteps Analysis",
       item_ids = dt_pars$item_ids,
+      custom_args = custom_args,
+      polytomous = dt_pars$polytomous,
       item_start_col = dt_pars$item_start_col,
       num_of_items = dt_pars$num_of_items,
       person_start_col = dt_pars$person_start_col,
@@ -702,8 +1079,10 @@ est_winsteps <- function(
     }
 
     # Create Winsteps Batch File
-    ws_create_winsteps_batch(target_dir = target_dir, control_fn = control_fn,
-                             output_fn = output_fn, batch_fn = batch_fn,
+    ws_create_winsteps_batch(target_dir = target_dir,
+                             control_fn = control_fn,
+                             output_fn = output_fn,
+                             batch_fn = batch_fn,
                              winsteps_exe_folder = winsteps_exe_folder)
     if (verbose) {
       cat(paste0("  Batch file created.   (", format(Sys.time(), format = "%X"),
@@ -722,25 +1101,45 @@ est_winsteps <- function(
     }
 
     # Read item parameters
-    item_pars <- ws_read_item_file(target_dir = target_dir, item_fn = item_fn)
-    ip <- ws_create_itempool(item_pars)
+    item_pars <- ws_read_item_file_csv(target_dir = target_dir, item_fn = item_fn)
+    # poly_pars <- ws_read_isfile_fwf(target_dir = target_dir, isfile_fn = isfile_fn)
+    poly_pars <- ws_read_poly_pars_csv(target_dir = target_dir,
+                                       item_pars = item_pars,
+                                       isfile_fn = isfile_fn,
+                                       polytomous_model = polytomous_model)
+    ip <- ws_create_itempool(item_pars, poly_pars)
 
-    if (verbose) {
-      cat(paste0("  Reading person parameters. (", format(Sys.time(), format = "%X"),
-                 ")\n"))
+    if (read_person_pars) {
+      if (verbose) {
+        cat(paste0("  Reading person parameters. (", format(Sys.time(), format = "%X"),
+                   ")\n"))
+      }
+      # Read person parameters
+      person_pars <- ws_read_person_file_csv(target_dir = target_dir,
+                                             person_fn = person_fn)
+
+    } else {
+      person_pars <- NULL
     }
-    # Read person parameters
-    person_pars <- ws_read_person_file(target_dir = target_dir,
-                                       person_fn = person_fn)
 
     if (verbose) {
       cat(paste0("Calibration completed.  (", format(Sys.time(), format = "%X"),
                  ")\n"))
     }
 
-    output <- list(raw_item_pars = item_pars,
-                   raw_person_pars = person_pars,
-                   ip = ip)
+    output <- list(raw_item_pars = item_pars)
+
+    if (dt_pars$polytomous) {
+      output[["raw_isfile"]] <- ws_read_isfile_csv(target_dir,
+                                                   isfile_fn = isfile_fn)
+      output[["raw_sfile"]] <- ws_read_sfile_csv(target_dir, sfile_fn = sfile_fn)
+    }
+
+    if (read_person_pars) {
+      output[["raw_person_pars"]] <- person_pars
+    }
+
+    output[["ip"]] <- ip
     saveRDS(output, output_rds_fn)
   }
 
