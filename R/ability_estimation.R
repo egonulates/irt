@@ -48,8 +48,16 @@
 #'       \code{prior_pars = c(0.1, 2)}.
 #'       }
 #'
-#'     \item{\strong{\code{'ml'}}}{Maximum Likelihood Ability Estimation
-#'       via Newton-Raphson Algorithm.}
+#'     \item{\strong{\code{'ml'}}}{Maximum Likelihood Ability Estimation.
+#'       For models using the 3PL, the estimation algorithm may occasionally
+#'       converge on a local maximum instead of the global maximum. In such
+#'       cases, the estimation process may take longer as it attempts to locate
+#'       the global maximum, potentially outside the defined \code{theta_range}.
+#'       Additionally, if the global maximum lies outside the specified
+#'       \code{theta_range}, the standard error will be calculated at the
+#'       nearest boundary within the \code{theta_range}, even though the
+#'       likelihood of the response may not be maximized at that point.
+#'     }
 #'     \item{\strong{\code{'eap'}}}{Expected-a-Posteriori Ability Estimation.
 #'       Prior information must be provided for this function. The number of
 #'       quadrature points can also be specified using the argument
@@ -257,19 +265,27 @@ est_ability <- function(
       #     interval = theta_range, maximum = TRUE, tol = tol*.5)$maximum)
 
       # For 3PL model `optimize` function sometimes finds the local maximum
-      # instead of local minimum. The following piece tacles with this
+      # instead of local minimum. The following section tackles this
       if ("3PL" %in% ip$item_model) {
-        theta_bins <- seq(from = theta_range[1], to = theta_range[2],
+        theta_bins <- seq(from = -4, to = 4,
                           by = min(.5, diff(theta_range)/2))
+
+        extreme_theta_values <- c(5, 7.5, 10, 25, 50, 100, 1000)
+        theta_bins <- sort(c(-extreme_theta_values, theta_bins,
+                             extreme_theta_values))
+        #  theta_bins,
+        #  extreme_theta_values[extreme_theta_values > theta_range[2]],
+        # -extreme_theta_values[-extreme_theta_values < theta_range[1]]))
+
         n_bin <- length(theta_bins)
         # Log-likelihood value at the estimated theta
-        ll_est <- round(resp_loglik_response_set_cpp(
-          resp_set = resp_set, ip = ip, theta = est), 4)
+        ll_est <- resp_loglik_response_set_cpp(
+          resp_set = resp_set, ip = ip, theta = est)
         # Log-likelihood at each bin value
         ll_bins <- sapply(theta_bins, function(x) resp_loglik_response_set_cpp(
           resp_set = resp_set, ip = ip, theta = rep(x, n_examinee)))
         if (n_examinee == 1) ll_bins <- matrix(ll_bins, nrow = 1)
-        ll_flag <- apply(round(ll_bins, 4), 2, function(x) x > ll_est)
+        ll_flag <- apply(ll_bins, 2, function(x) x > ll_est)
         if (n_examinee == 1) ll_flag <- matrix(ll_flag, nrow = 1)
         ll_flag <- apply(ll_flag, 1, which)
         if (n_examinee == 1) ll_flag <- list(as.vector(ll_flag))
@@ -279,6 +295,8 @@ est_ability <- function(
             ll_flag[problematic_cases], function(x)
               c(theta_bins[max(1, min(x) - 1)],
                 theta_bins[min(n_bin, max(x) + 1)]))
+
+
           est[problematic_cases] <- sapply(
             seq_along(problematic_cases),
             function(i)
@@ -289,6 +307,13 @@ est_ability <- function(
                 lower = new_theta_ranges[[i]][1],
                 upper = new_theta_ranges[[i]][2],
                 tol = tol * .1, maximum = TRUE)$maximum)
+
+          est[problematic_cases] <- ifelse(
+            est[problematic_cases] > theta_range[2], theta_range[2],
+            est[problematic_cases])
+          est[problematic_cases] <- ifelse(
+            est[problematic_cases] < theta_range[1], theta_range[1],
+            est[problematic_cases])
         }
 
         # ll_lb <- resp_loglik_response_set_cpp(

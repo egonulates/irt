@@ -935,76 +935,13 @@ test_that("est_ability - ML", {
 
 
   # -------------------------------------------------------------------------- #
-  r <- new("Response", examinee_id = "S15", item_id = c("Item_1", "Item_2",
-  "Item_3", "Item_4", "Item_5", "Item_6", "Item_7", "Item_8", "Item_9",
-  "Item_10", "Item_11", "Item_12", "Item_13", "Item_14", "Item_15",
-  "Item_16", "Item_17", "Item_18"), testlet_id = NULL, score = c(1L,
-  0L, 0L, 0L, 1L, 0L, 0L, 0L, 0L, 0L, 1L, 0L, 0L, 0L, 0L, 0L, 0L,
-  0L), raw_response = NULL, order = 1:18, response_time = NULL,
-      misc = NULL)
-  x <- new("Itempool", item_list = list(Item_1 = new("3PL", a = 0.969,
-      b = 0.9786, c = 0.1874, D = 1, se_a = NULL, se_b = NULL,
-      se_c = NULL, item_id = "Item_1", content = NULL, misc = NULL),
-      Item_2 = new("3PL", a = 0.9468, b = -0.9774, c = 0.2414,
-          D = 1, se_a = NULL, se_b = NULL, se_c = NULL, item_id = "Item_2",
-          content = NULL, misc = NULL), Item_3 = new("3PL", a = 1.2925,
-          b = 0.1185, c = 0.1834, D = 1, se_a = NULL, se_b = NULL,
-          se_c = NULL, item_id = "Item_3", content = NULL, misc = NULL),
-      Item_4 = new("3PL", a = 0.6005, b = -0.1643, c = 0.0278,
-          D = 1, se_a = NULL, se_b = NULL, se_c = NULL, item_id = "Item_4",
-          content = NULL, misc = NULL), Item_5 = new("3PL", a = 1.046,
-          b = -0.6026, c = 0.1159, D = 1, se_a = NULL, se_b = NULL,
-          se_c = NULL, item_id = "Item_5", content = NULL, misc = NULL),
-      Item_6 = new("3PL", a = 1.3144, b = -0.0333, c = 0.2262,
-          D = 1, se_a = NULL, se_b = NULL, se_c = NULL, item_id = "Item_6",
-          content = NULL, misc = NULL), Item_7 = new("3PL", a = 0.7247,
-          b = -1.4337, c = 0.162, D = 1, se_a = NULL, se_b = NULL,
-          se_c = NULL, item_id = "Item_7", content = NULL, misc = NULL),
-      Item_8 = new("3PL", a = 1.1262, b = -0.8723, c = 0.0244,
-          D = 1, se_a = NULL, se_b = NULL, se_c = NULL, item_id = "Item_8",
-          content = NULL, misc = NULL), Item_9 = new("3PL", a = 1.1604,
-          b = 0.8296, c = 0.0142, D = 1, se_a = NULL, se_b = NULL,
-          se_c = NULL, item_id = "Item_9", content = NULL, misc = NULL),
-      Item_10 = new("3PL", a = 1.9168, b = -0.1796, c = 0.174,
-          D = 1, se_a = NULL, se_b = NULL, se_c = NULL, item_id = "Item_10",
-          content = NULL, misc = NULL), Item_11 = new("3PL", a = 0.8503,
-          b = -1.5656, c = 0.2195, D = 1, se_a = NULL, se_b = NULL,
-          se_c = NULL, item_id = "Item_11", content = NULL, misc = NULL),
-      Item_12 = new("3PL", a = 1.4175, b = 0.4762, c = 0.0303,
-          D = 1, se_a = NULL, se_b = NULL, se_c = NULL, item_id = "Item_12",
-          content = NULL, misc = NULL), Item_13 = new("3PL", a = 1.3567,
-          b = 0.2714, c = 0.2198, D = 1, se_a = NULL, se_b = NULL,
-          se_c = NULL, item_id = "Item_13", content = NULL, misc = NULL),
-      Item_14 = new("3PL", a = 0.8433, b = -0.3574, c = 0.0728,
-          D = 1, se_a = NULL, se_b = NULL, se_c = NULL, item_id = "Item_14",
-          content = NULL, misc = NULL), Item_15 = new("3PL", a = 0.8377,
-          b = -0.0228, c = 0.1961, D = 1, se_a = NULL, se_b = NULL,
-          se_c = NULL, item_id = "Item_15", content = NULL, misc = NULL),
-      Item_16 = new("3PL", a = 0.5828, b = -0.6004, c = 0.0451,
-          D = 1, se_a = NULL, se_b = NULL, se_c = NULL, item_id = "Item_16",
-          content = NULL, misc = NULL), Item_17 = new("3PL", a = 0.8662,
-          b = 0.2746, c = 0.1924, D = 1, se_a = NULL, se_b = NULL,
-          se_c = NULL, item_id = "Item_17", content = NULL, misc = NULL),
-      Item_18 = new("3PL", a = 1.1107, b = 0.3376, c = 0.1457,
-          D = 1, se_a = NULL, se_b = NULL, se_c = NULL, item_id = "Item_18",
-          content = NULL, misc = NULL)), misc = NULL)
-
-  # plot_resp_loglik(ip = ip, resp = resp, theta_range = c(-10, 0))
-
-  observed <- est_ability(resp = response_set(r), ip = x, method = "ml",
-                          theta_range = c(-10, 10))$est
-  # sapply(c(-10, observed), resp_loglik, ip = x, resp = r)
-  expect_identical(unname(observed), -10,
-                   info = "This is a known bug that needs to be fixed soon!")
-
-  # -------------------------------------------------------------------------- #
   # Test problematic cases - 01 - Item pool with 3PL and GPCM items
   test_fn <- test_path("data_for_tests",
                        "ability_estimation_mle_test_cases_001.rds")
   if (file.exists(test_fn)) {
     test_data <- readRDS(test_fn)
     observed <- est_ability(resp = test_data$resp_set, ip = test_data$ip,
-                            method = "ml", theta_range = c(-15, 15))$est
+                            method = "ml", theta_range = c(-4, 4))$est
     expect_identical(observed, test_data$expected_theta, tolerance = 0.0001)
 
     # plot_resp_loglik(ip = test_data$ip, resp = test_data$resp_set[[1]],
@@ -1048,11 +985,112 @@ test_that("est_ability - ML", {
   }
 
 
+  # -------------------------------------------------------------------------- #
+  # Test problematic cases - 04
+  test_fn <- test_path("data_for_tests",
+                       "ability_estimation_mle_test_cases_004.rds")
+
+  if (file.exists(test_fn)) {
+    test_data <- readRDS(test_fn)
+    observed <- est_ability(resp = test_data$resp_set, ip = test_data$ip,
+                            method = "ml", theta_range = c(-5, 5))$est
+
+    expected_theta <- test_data$expected_theta$expected_theta[
+      match(names(observed), test_data$expected_theta$examinee_id)]
+
+    expect_equal(unname(observed), expected_theta, tolerance = 0.0001)
+
+    observed <- est_ability(resp = test_data$resp_set, ip = test_data$ip,
+                            method = "ml", theta_range = c(-30, 30))$est
+
+    expect_equal(unname(observed), expected_theta, tolerance = 0.0001)
+    # plot_resp_loglik(ip = ip, resp = resp, theta_range = c(-10, 0))
+  }
+
+
+
+  # -------------------------------------------------------------------------- #
+  # Test problematic cases - 05
+  test_fn <- test_path("data_for_tests",
+                       "ability_estimation_mle_test_cases_005.rds")
+
+  if (file.exists(test_fn)) {
+    test_data <- readRDS(test_fn)
+    observed <- est_ability(resp = test_data$resp, ip = test_data$ip,
+                            method = "ml", theta_range = c(-10, 10))$est
+    expect_identical(unname(observed),
+                     test_data$expected_theta, tolerance = 0.0001)
+    # plot_resp_loglik(ip = ip, resp = resp, theta_range = c(-10, 0))
+  }
+
+  # -------------------------------------------------------------------------- #
+  # Test problematic cases - 06 - Problematic local minimum ML cases
+  test_fn <- test_path("data_for_tests",
+                       "ability_estimation_mle_test_cases_006.rds")
+
+  if (file.exists(test_fn)) {
+    test_data <- readRDS(test_fn)
+    observed <- est_ability(resp = test_data$resp_set, ip = test_data$ip,
+                            method = "ml", theta_range = c(-4, 4))$est
+    expect_identical(unname(observed),
+                     test_data$expected_theta, tolerance = 0.0001)
+    # plot_resp_loglik(ip = ip, resp = resp, theta_range = c(-10, 0))
+  }
+
+
+  # -------------------------------------------------------------------------- #
+  # Test problematic cases - 07 - Problematic local minimum ML case
+  test_fn <- test_path("data_for_tests",
+                       "ability_estimation_mle_test_cases_007.rds")
+
+  if (file.exists(test_fn)) {
+    test_data <- readRDS(test_fn)
+
+    observed <- est_ability(resp = test_data$resp_set, ip = test_data$ip,
+                            method = "ml", theta_range = c(-3, 3))$est
+    expect_identical(unname(observed),
+                     test_data$expected_theta, tolerance = 0.0001)
+
+    observed <- est_ability(resp = test_data$resp_set, ip = test_data$ip,
+                            method = "ml", theta_range = c(-4, 4))$est
+    expect_identical(unname(observed),
+                     test_data$expected_theta, tolerance = 0.0001)
+    # plot_resp_loglik(ip = ip, resp = resp, theta_range = c(-10, 0))
+  }
+
 
 })
 
 
 
+###############################################################################@
+############################# est_ability - ML - RTM ###########################
+###############################################################################@
+test_that("est_ability - ML - RTM", {
+  # RTM: Rasch Testlet Model
+
+
+  # -------------------------------------------------------------------------- #
+  test_fn <- test_path("data_for_tests",
+                       "ability_estimation_RTM_test_cases_001.RDS")
+
+  if (file.exists(test_fn)) {
+    test_data <- readRDS(test_fn)
+    observed <- est_ability(resp = test_data$resp_set, ip = test_data$ip,
+                            method = "ml", theta_range = c(-5, 5))
+    observed_theta <- observed$est
+    observed_se <- observed$se
+    expected_theta <- test_data$expected_theta$theta[
+      match(names(observed_theta), test_data$expected_theta$examinee_id)]
+    expected_se <- test_data$expected_theta$se[
+      match(names(observed_se), test_data$expected_theta$examinee_id)]
+    expect_identical(unname(observed_theta),
+                     expected_theta, tolerance = 0.0001)
+    expect_identical(unname(observed_se),
+                     expected_se, tolerance = 0.0001)
+    # plot_resp_loglik(ip = ip, resp = resp, theta_range = c(-10, 0))
+  }
+})
 
 
 ###############################################################################@
