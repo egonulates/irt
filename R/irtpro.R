@@ -520,6 +520,14 @@ irtpro_read_scores <- function(
 #'                                    Trust = "Fast")}}
 #'   }
 #'
+#'   In the \code{"BAEM"} estimation method, the quadrature default `c(49, 6)`
+#'   means the number of quadrature points is equal to 49 and the integration
+#'   range from -6 and 6 (maximum value: 6).
+#'
+#'   In the \code{"ADQ"} estimation method, the quadrature default `c(9, "GH")`
+#'   means the number of quadrature points is equal to 9 and the integration
+#'   method is Gauss-Hermite.
+#'
 #' For \code{"SE"} element, the options are \code{"S-EM"}, \code{"M-Step"},
 #' \code{"Xpd"}, and \code{"Sandwich"}. See the IRTPRO manual for details.
 #' @param scoring_method A string that can take one of the following values:

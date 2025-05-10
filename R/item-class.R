@@ -197,9 +197,11 @@ setClassUnion(name = "numMatDfListChar",
 #' @slot item_id Item ID. Default value is \code{NULL}.
 #' @slot content Content information for the Item object.
 #' @slot misc This slot is a list where one can put any information about
-#'  the Item object. For example, one can enter the ID's of the enemies of the current
-#'  Item as \code{misc = list(enemies = c("i1", i2))}. Or, one can enter
-#'  Sympson-Hetter exposure control parameter K:
+#'  the Item object. For example, one can enter the ID's of the enemies of the
+#'  current Item as \code{misc = list(enemy_items = c("i1", "i2"))}. Note that,
+#'  for example, for CAT simulation functions, the \code{enemy_items} can be
+#'  used to mask certain items from being administered.
+#'  Or, one can enter Sympson-Hetter exposure control parameter K:
 #'  \code{misc = list(sympson_hetter_k = .75)}.
 #'
 #' @export
