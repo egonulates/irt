@@ -756,7 +756,7 @@ equate_stuirt <- function(
   writeLines(syntax_text, con = syntax_path)
 
   ### Run Syntax ###
-  command <- paste0(stuirt_exe_path, " \"", syntax_path, "\" \"", output_path,
+  command <- paste0("\"", stuirt_exe_path, "\" \"", syntax_path, "\" \"", output_path,
                     "\"")
   system("cmd.exe", input = command, wait = TRUE,
          show.output.on.console = show_output_on_console)
