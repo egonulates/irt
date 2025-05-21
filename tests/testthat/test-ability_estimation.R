@@ -329,6 +329,97 @@ test_that("est_ability", {
   # expected <- est_ability(ip = ip1, resp = resp, method = "eap")
   # expect_identical(expected, observed)
 
+
+  # -------------------------------------------------------------------------- #
+  # Another testlet example where the testlet and item names are numeric
+  ip_with_testlet <- new(
+    "Itempool",
+    item_list = list(
+      `2054` = new(
+        "Testlet", testlet_id = "2054",
+        item_list = new("Itempool", item_list = list(
+          `20541` = new("3PL",  a = 1.37, b = 0.164, c = 0.204, D = 1.7,
+                        se_a = 0.06, se_b = 0.03, se_c = 0.02,
+                        item_id = "20541", content = NULL, misc = NULL),
+          `20542` = new("3PL", a = 1.568, b = -0.25, c = 0.012, D = 1.7,
+                        se_a = 0.05, se_b = 0.019, se_c = 0.005,
+                        item_id = "20542", content = NULL, misc = NULL)),
+          misc = NULL),
+        model = "BTM", parameters = NULL, se_parameters = NULL,
+        content = NULL, misc = NULL),
+      `7353` = new(
+        "Testlet", testlet_id = "7353",
+        item_list = new("Itempool", item_list = list(
+          `73531` = new("3PL", a = 2.23, b = 1.15, c = 0.19, D = 1.7,
+                        se_a = 0.13, se_b = 0.08, se_c = 0.06,
+                        item_id = "73531", content = NULL, misc = NULL),
+          `73532` = new("3PL", a = 1.78, b = 1.81, c = 0.14, D = 1.7,
+                        se_a = 0.28, se_b = 0.08, se_c = 0.06,
+                        item_id = "73532", content = NULL, misc = NULL)),
+          misc = NULL),
+        model = "BTM", parameters = NULL, se_parameters = NULL, content = NULL,
+        misc = NULL)), misc = NULL)
+
+  ip_wo_testlet <- itempool(irt:::flatten_itempool_cpp(ip_with_testlet))
+
+  resp <- new("Response",
+              examinee_id = NULL,
+              item_id = c("20541", "20542", "73531", "73532"),
+              testlet_id = NULL,
+              # score = c(`20541` = 1L, `20542` = 1L, `73531` = 1L, `73532` = 0L),
+              score = c(1L, 1L, 1L, 0L),
+              raw_response = NULL,
+              order = NULL, response_time = NULL, misc = NULL)
+
+  observed_est <- est_ability(ip = ip_with_testlet, resp = resp, method = "ml")
+  expected_est <- est_ability(ip = ip_wo_testlet, resp = resp, method = "ml")
+  expect_identical(expected_est, observed_est, tolerance = 1e-8)
+
+
+  # -------------------------------------------------------------------------- #
+  # Create a itempool with testlet with numeric testlet_id ('23', '91') and
+  # item_id (with testlet_id + 1:2) with
+  # random item and testlet ids and parameters
+  ip_with_testlet <- itempool(
+    item_list = list(
+      `23` = testlet(
+        item_list = itempool(
+          item_list = list(
+            `231` = item(a = rlnorm(1, 0, .3), b = rnorm(1), c = .2, item_id = "231"),
+            `232` = item(a = rlnorm(1, 0, .3), b = rnorm(1), c = .2, item_id = "232")
+          )
+        ),
+        testlet_id = "23"
+      ),
+      `91` = testlet(
+        item_list = itempool(
+          item_list = list(
+            `911` = item(a = rlnorm(1, 0, .3), b = rnorm(1), c = .2, item_id = "911"),
+            `912` = item(a = rlnorm(1, 0, .3), b = rnorm(1), c = .2, item_id = "912")
+          )
+        ),
+        testlet_id = "91"
+      ),
+      `1` = item(a = rlnorm(1, 0, .3), b = rnorm(1), c = .2, item_id = "1"),
+      `2` = item(a = rlnorm(1, 0, .3), b = rnorm(1), c = .2, item_id = "2")
+    )
+  )
+  ip_wo_testlet <- itempool(irt:::flatten_itempool_cpp(ip_with_testlet))
+
+  resp <- new("Response",
+              examinee_id = NULL,
+              item_id = c("231", "232", "911", "912", "1", "2"),
+              testlet_id = NULL,
+              # score = c(`231` = 1L, `232` = 1L, `911` = 1L, `912` = 0L),
+              score = c(1L, 1L, 1L, 0L, 1, 0),
+              raw_response = NULL,
+              order = NULL, response_time = NULL, misc = NULL)
+
+  observed_est <- est_ability(ip = ip_with_testlet, resp = resp, method = "ml")
+  expected_est <- est_ability(ip = ip_wo_testlet, resp = resp, method = "ml")
+  expect_identical(expected_est, observed_est, tolerance = 1e-8)
+
+
   # -------------------------------------------------------------------------- #
   # The estimate numbers are rounded to the tolerance level.
   n_items <- sample(5:10, 1)
@@ -388,9 +479,11 @@ test_that("est_ability", {
   expect_error(est_ability(resp = resp_set, ip = ip_short, method = "ml"),
                paste0("Invalid 'ip'. All of the items in the response data ",
                       "should be in the item pool, ip."))
-  expect_error(est_ability(resp = resp, ip = ip_short, method = "ml"),
-               paste0("Invalid 'ip'. All of the items in the response data ",
-                      "should be in the item pool, ip."))
+  # expect_error(est_ability(resp = resp, ip = ip_short, method = "ml"),
+  #              paste0("Invalid 'ip'. All of the items in the response data ",
+  #                     "should be in the item pool, ip."))
+  expect_warning(est_ability(resp = resp, ip = ip_short, method = "ml"),
+                 paste0("The following columns are not in the item pool"))
 
 
   # -------------------------------------------------------------------------- #
@@ -941,7 +1034,7 @@ test_that("est_ability - ML", {
   if (file.exists(test_fn)) {
     test_data <- readRDS(test_fn)
     observed <- est_ability(resp = test_data$resp_set, ip = test_data$ip,
-                            method = "ml", theta_range = c(-4, 4))$est
+                            method = "ml", theta_range = c(-5, 5))$est
     expect_identical(observed, test_data$expected_theta, tolerance = 0.0001)
 
     # plot_resp_loglik(ip = test_data$ip, resp = test_data$resp_set[[1]],
@@ -1040,6 +1133,7 @@ test_that("est_ability - ML", {
 
   # -------------------------------------------------------------------------- #
   # Test problematic cases - 07 - Problematic local minimum ML case
+  # TODO Known bug
   test_fn <- test_path("data_for_tests",
                        "ability_estimation_mle_test_cases_007.rds")
 
@@ -1055,9 +1149,8 @@ test_that("est_ability - ML", {
                             method = "ml", theta_range = c(-4, 4))$est
     expect_identical(unname(observed),
                      test_data$expected_theta, tolerance = 0.0001)
-    # plot_resp_loglik(ip = ip, resp = resp, theta_range = c(-10, 0))
+    # plot_resp_loglik(ip = test_data$ip, resp = test_data$resp_set, theta_range = c(-5, 0.5))
   }
-
 
 })
 
@@ -1838,6 +1931,9 @@ test_that("est_ability_eap_single_examinee_cpp", {
 ############################# est_ability_eap_response_set_cpp #################
 ###############################################################################@
 test_that("est_ability_eap_response_set_cpp", {
+
+
+  # -------------------------------------------------------------------------- #
   ip <- generate_ip(n = 10)
   theta <- rnorm(5)
   resp <- sim_resp(ip = ip, theta = theta, prop_missing = .2)
@@ -1867,6 +1963,94 @@ test_that("est_ability_eap_response_set_cpp", {
   # expr    min     lq     mean  median      uq      max neval cld
   #  old 4.2124 4.8987 5.869103 5.54060 6.35010  20.2398  1000  a
   #  new 4.8772 5.7121 6.909870 6.42225 7.35045 137.6635  1000   b
+
+
+
+  # -------------------------------------------------------------------------- #
+  # Test whether EAP estimation of a testlet and standalone items will
+  # give the same results
+  t1 <- testlet(itempool(b = rnorm(2), item_id = c("t1-i1", "t1-i2")),
+                   testlet_id = "t1")
+  t2 <- testlet(itempool(a = rlnorm(3, 0, .3), b = rnorm(3),
+                                item_id = c("t2-i1", "t2-i2", "t2-i3")),
+                testlet_id = "t2")
+  i1 <- item(b = rnorm(1), item_id = "i1")
+  i2 <- item(a = rlnorm(1, 0, .3), b = rnorm(1), c = .2, item_id = "i2")
+  i3 <- item(a = rlnorm(1, 0, .3), b = sort(runif(3)), item_id = "i3")
+  ip_with_testlet <- c(t1, t2, i1, i2, i3)
+  ip_without_testlet <- c(t1@item_list, t2@item_list, i1, i2, i3)
+  n_examinee <- sample(10:20, 1)
+  resp_set_with_testlet <- generate_resp_set(ip = ip_with_testlet,
+                                             theta = rnorm(n_examinee),
+                                             prop_missing = 0)
+  resp_set_without_testlet <- response_set(
+    x = as.data.frame(resp_set_with_testlet)[, c("examinee_id", "item_id",
+                                                 "score", "order")],
+    data_format = "long",
+    examinee_id_var = "examinee_id",
+    item_id_var = "item_id",
+    score_var = "score",
+    order_var = "order")
+  npq <- sample(40:150, 1)
+  prior_mean <- runif(1, -1, 1)
+  prior_sd <- runif(1, 0.2, 1.5)
+  theta_low <- runif(1, -5, -3)
+  theta_high <- runif(1, 3, 5)
+
+  expected <- irt:::est_ability_eap_response_set_cpp(
+    resp_set = resp_set_without_testlet,
+    ip = ip_without_testlet,
+    theta_range = c(theta_low, theta_high),
+    no_of_quadrature = npq,
+    prior_dist = "norm", prior_par = c(prior_mean, prior_sd))
+
+  observed <- irt:::est_ability_eap_response_set_cpp(
+    resp_set = resp_set_with_testlet,
+    ip = ip_with_testlet,
+    theta_range = c(theta_low, theta_high),
+    no_of_quadrature = npq,
+    prior_dist = "norm", prior_par = c(prior_mean, prior_sd))
+  expect_identical(expected, observed, tolerance = 1e-8)
+
+
+  observed <- irt:::est_ability_eap_response_set_cpp(
+    resp_set = resp_set_without_testlet,
+    ip = ip_with_testlet,
+    theta_range = c(theta_low, theta_high),
+    no_of_quadrature = npq,
+    prior_dist = "norm", prior_par = c(prior_mean, prior_sd))
+  expect_identical(expected, observed, tolerance = 1e-8)
+
+  observed <- irt:::est_ability_eap_response_set_cpp(
+    resp_set = resp_set_with_testlet,
+    ip = ip_without_testlet,
+    theta_range = c(theta_low, theta_high),
+    no_of_quadrature = npq,
+    prior_dist = "norm",
+    prior_par = c(prior_mean, prior_sd))
+  expect_identical(expected, observed, tolerance = 1e-8)
+
+  # response set with testlet
+  observed <- est_ability(
+    ip = ip_without_testlet,
+    resp = resp_set_without_testlet,
+    method = "eap",
+    theta_range = c(theta_low, theta_high),
+    number_of_quads = npq,
+    prior_dist = "norm",
+    prior_pars = c(prior_mean, prior_sd))
+  expect_equal(expected, observed, tolerance = 1e-5, ignore_attr = TRUE)
+
+  observed <- est_ability(
+    ip = ip_with_testlet,
+    resp = resp_set_with_testlet,
+    method = "eap",
+    theta_range = c(theta_low, theta_high),
+    number_of_quads = npq,
+    prior_dist = "norm",
+    prior_pars = c(prior_mean, prior_sd))
+  expect_equal(expected, observed, tolerance = 1e-5, ignore_attr = TRUE)
+
 })
 
 

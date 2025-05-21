@@ -11,29 +11,90 @@
 #' Estimate Examinee Ability
 #'
 #' @description
-#' This function estimates examinee ability using different methods, including
-#' Owen's Bayesian estimation, Maximum Likelihood estimation,
-#' Maximum-a-Posteriori and Expected-a-Posteriori.
+#' `est_ability()` estimates the ability (latent trait level) of examinees based
+#' on their responses to test items using various Item Response Theory (IRT)
+#' methods. It supports both classical estimation techniques, like Maximum
+#' Likelihood (ML), and Bayesian approaches, such as Expected-a-Posteriori
+#' (EAP), Maximum-a-Posteriori (MAP), and Owen’s Bayesian Method. These methods
+#' have been widely studied and used in psychometric research to infer examinee
+#' traits accurately.
 #'
-#' @param resp A \code{\link{Response_set-class}}, \code{matrix} or a
-#'   \code{data.frame} object holding responses. Missing responses are excluded
-#'   from the ability estimation.
-#' @param ip An \code{\link{Item-class}}, \code{\link{Itempool-class}} or a
-#'   \code{\link{Testlet-class}} object. If \code{ip} is not an
-#'   \code{\link{Itempool-class}} object, the function attempts to convert it.
-#'   While the default is \code{NULL}, this argument is required for all methods
-#'   except when \code{method = "sum_score"}.
-#' @param method The method used for ability estimation. The default is
-#'   \code{"eap"}.
+#' The function is versatile and can handle different models (e.g., dichotomous
+#' and polytomous) and item formats, making it suitable for a range of
+#' psychometric applications. Moreover, the inclusion of different prior
+#' distributions and flexible output formats enhances the adaptability of this
+#' function for both research and applied testing scenarios.
 #'
-#'   Available methods:
+#'
+#' @details
+#' Estimating examinee ability is a core component of IRT, which models the
+#' probability of a correct response as a function of the examinee's ability and
+#' item parameters. Each method offered by `est_ability()` provides unique
+#' advantages:
+#'
+#' - **Owen’s Bayesian Method**: This method is a sequential Bayesian
+#'   estimation technique, particularly effective for dichotomous IRT models
+#'   such as the Rasch model and its extensions (e.g., 2PL, 3PL).
+#'   Introduced by Owen (1975), it uses prior information to iteratively update
+#'   ability estimates, making it suitable for adaptive testing and scenarios
+#'   where prior knowledge about the examinee population is available. The
+#'   method requires prior parameters, specified as the mean and standard
+#'   deviation of the prior distribution. Vale & Weiss (1977) later optimized
+#'   this approach for faster computations in adaptive testing.
+#'
+#' - **Maximum Likelihood Estimation (ML)**: A traditional and widely-used
+#'   method in psychometrics, ML maximizes the likelihood of the observed
+#'   response pattern given the ability parameter. It is most effective when
+#'   item response data are well-aligned with the underlying IRT model. However,
+#'   in models like the 3PL, ML can sometimes converge to local maxima,
+#'   particularly when the guessing parameter is non-negligible
+#'   (Baker & Kim, 2004). To mitigate this, the algorithm in `est_ability()`
+#'   performs checks to ensure the global maximum is identified, even if this
+#'   requires additional computational effort.
+#'
+#' - **Expected-a-Posteriori (EAP) Estimation**: This Bayesian method
+#'   calculates the posterior mean of the ability distribution, integrating over
+#'   a specified grid of quadrature points. It provides stable estimates,
+#'   especially when dealing with sparse data or extreme response patterns
+#'   (Bock & Aitkin, 1981). The precision of the EAP estimate depends on the
+#'   number of quadrature points, with more points offering higher accuracy but
+#'   increased computational cost.
+#'
+#' - **Maximum-a-Posteriori (MAP) or Bayes Modal (BM) Estimation**: MAP
+#'   estimation finds the mode of the posterior distribution, providing a
+#'   Bayesian alternative to ML that incorporates prior information. It is
+#'   particularly useful in situations where prior beliefs about the ability
+#'   distribution can improve estimation accuracy, such as in small-sample
+#'   testing scenarios (Samejima, 1997). In `est_ability()`, only a normal prior
+#'   distribution is currently supported for MAP estimation.
+#'
+#' - **Sum Score**: A simple and intuitive method that calculates the
+#'   raw (sum) score of the responses. While this method does not consider item
+#'   parameters or provide uncertainty estimates, it is useful for preliminary
+#'   analyses or when IRT modeling is not feasible.
+#'
+#' @param resp A \code{\link{Response_set-class}}, \code{matrix}, or a
+#'   \code{data.frame} object holding examinee responses. Missing values
+#'   (\code{NA}s) in the response data are excluded from the ability estimation.
+#'
+#' @param ip An \code{\link{Item-class}}, \code{\link{Itempool-class}}, or
+#'   \code{\link{Testlet-class}} object representing item parameters. If this is
+#'   not provided as an \code{\link{Itempool-class}} object, the function will
+#'   attempt to convert it. Note: This argument is mandatory for all methods
+#'   except \code{"sum_score"}.
+#' @param method A character string specifying the method for ability
+#'   estimation. Options include:
 #'   \describe{
-#'     \item{\strong{\code{'sum_score'}}}{Basic sum (raw) score of responses.}
-#'     \item{\strong{\code{'owen'}}}{Owen's Bayesian Ability Estimation.
-#'
-#'       This method is suitable for dichotomous IRT models (e.g., 'Rasch',
-#'       '1PL', '2PL', '3PL' and '4PL'). Testlet groupings are ignored and items
-#'       within testlets are treated as standalone items.
+#'     \item{\strong{"sum_score"}}{Calculates the raw score of responses,
+#'      without modeling item characteristics. Useful for exploratory purposes
+#'      or when IRT modeling is unnecessary.
+#'     }
+#'     \item{\strong{"owen"}}{Owen's Bayesian Ability Estimation, suited for
+#'       dichotomous IRT models (e.g., Rasch, 2PL, 3PL, 4PL). This method is
+#'       based on sequential Bayesian updates and requires specifying
+#'       \code{prior_pars} (mean and standard deviation of the prior
+#'       distribution). Refer to Owen (1975) for theoretical foundations and
+#'       Vale & Weiss (1977) for practical applications in adaptive testing.
 #'
 #'       Formulas were implemented in Owen (1975) and Vale (1977). The original
 #'       formulation does not include the D parameter. If \code{D = 1}, the
@@ -46,120 +107,205 @@
 #'       deviation (not variance). For example, if the prior mean is 0.1 and the
 #'       prior standard deviation is 2, set the prior parameters as
 #'       \code{prior_pars = c(0.1, 2)}.
-#'       }
-#'
-#'     \item{\strong{\code{'ml'}}}{Maximum Likelihood Ability Estimation.
-#'       For models using the 3PL, the estimation algorithm may occasionally
-#'       converge on a local maximum instead of the global maximum. In such
-#'       cases, the estimation process may take longer as it attempts to locate
-#'       the global maximum, potentially outside the defined \code{theta_range}.
-#'       Additionally, if the global maximum lies outside the specified
-#'       \code{theta_range}, the standard error will be calculated at the
-#'       nearest boundary within the \code{theta_range}, even though the
-#'       likelihood of the response may not be maximized at that point.
 #'     }
-#'     \item{\strong{\code{'eap'}}}{Expected-a-Posteriori Ability Estimation.
-#'       Prior information must be provided for this function. The number of
-#'       quadrature points can also be specified using the argument
-#'       \code{number_of_quads}. }
-#'     \item{\strong{\code{'map'}} or \strong{\code{'bm'}}}{Maximum-a-Posteriori
-#'       Ability Estimation (or Bayes Modal estimation). Prior information must
-#'       be provided for this function. Currently, only \code{'norm'} prior
-#'       distribution is available.}
+#'     \item{\strong{"ml"}}{Maximum Likelihood Estimation. Effective for data
+#'       that align well with IRT models. For models using the 3PL, the
+#'       estimation algorithm may occasionally converge on a local maximum
+#'       instead of the global maximum. In such cases, the estimation process
+#'       may take longer as it attempts to locate the global maximum,
+#'       potentially outside the defined \code{theta_range}. Additionally, if
+#'       the global maximum lies outside the specified \code{theta_range}, the
+#'       standard error will be calculated at the nearest boundary within the
+#'       \code{theta_range}, even though the likelihood of the response may not
+#'       be maximized at that point.
+#'     }
+#'     \item{\strong{"eap"}}{Expected-a-Posteriori Estimation. This method uses
+#'       numerical integration over a specified grid of quadrature points, with
+#'       higher numbers of points yielding more precise estimates (Bock &
+#'       Aitkin, 1981). Prior information must be provided for this function.
+#'       The number of quadrature points can also be specified using the
+#'       argument \code{number_of_quads}.
+#'     }
+#'     \item{\strong{"map"}  or \strong{"bm"}}{Maximum-a-Posteriori
+#'       (or Bayes Modal) Estimation. Uses prior information to provide robust
+#'       ability estimates, especially useful for small samples (Samejima,
+#'       1997). Only a normal prior is currently supported.}
 #'   }
-#' @param ... Additional arguments passed to specific methods.
-#' @param prior_dist The shape of the prior distribution. Available options are:
-#'   \describe{
-#'     \item{'norm'}{Normal distribution}
-#'     \item{'unif'}{Uniform distribution}
-#'     \item{'t'}{t distribution}
-#'     \item{'cauchy'}{Cauchy distribution}
-#'   }
-#'   The default value is \code{'norm'}.
-#' @param prior_pars Parameters of the prior distribution. Default value is
-#'   \code{c(0, 1)}, where 0 is the mean and 1 is the standard deviation of the
-#'   default normal prior distribution. For example, uniform prior parameter can
-#'   be set as \code{c(a, b)} where \code{a} is the minimum value and \code{b}
-#'   is the maximum value. For \code{t} distribution, prior parameter can be set
-#'   as \code{df} to represent the degree of freedom. For Cauchy distribution,
-#'   prior parameters can be set as \code{c(location, scale)}.
+#'   Default is \code{"eap"}.
+#' @param ... Additional arguments passed to the specific estimation methods.
 #'
+#' @param prior_dist A character string indicating the shape of the prior
+#'   distribution. Options include:
+#'   \describe{
+#'     \item{\strong{"norm"}}{Normal distribution (default).}
+#'     \item{\strong{"unif"}}{Uniform distribution.}
+#'     \item{\strong{"t"}}{t-distribution, offering flexibility in
+#'       modeling heavy tails.}
+#'     \item{\strong{"cauchy"}}{Cauchy distribution, known for heavy tails and
+#'       robustness to outliers.}
+#'   }
+#' @param prior_pars A numeric vector specifying the parameters of the prior
+#'   distribution. The default is \code{c(0, 1)}, representing a mean of 0 and a
+#'   standard deviation of 1 for the normal prior. Different distributions
+#'   require different parameterizations:
+#'   \itemize{
+#'     \item For \code{"norm"}: \code{c(mean, sd)}.
+#'     \item For \code{"unif"}: \code{c(min, max)}.
+#'     \item For \code{"t"}: Degrees of freedom \code{df}.
+#'     \item For \code{"cauchy"}: \code{c(location, scale)}.
+#'   }
 #'   If method is \code{"owen"}, provide \code{c(<Prior Mean>, <Prior SD>)}.
 #'
-#' @param theta_range The limits of the ability estimation scale. The estimation
-#'   result will be bounded within this interval. Default is \code{c(-5, 5)}.
-#' @param number_of_quads Number of quadratures. The default value is 41. As
-#'   this number increases, the precision of the estimate will also increase.
-#' @param tol The precision level of ability estimate. The final ability
+#' @param theta_range A numeric vector of length two, setting the bounds of the
+#'   ability scale. This range ensures that estimates remain within realistic
+#'   limits. Default is \code{c(-5, 5)}.
+#' @param number_of_quads An integer specifying the number of quadrature points
+#'   for EAP estimation. More points increase precision but also computational
+#'   load. Default is 41.
+#' @param tol A numeric value indicating the tolerance for precision in ability
+#'   estimates. Smaller values yield more precise results. The final ability
 #'   estimates will be rounded to remove precision smaller than the \code{tol}
-#'   value. Default is \code{1e-06}.
-#' @param output_type A string specifying the output type of the function.
-#'   Default is \code{"list"}. Options include:
-#'   \describe{
-#'     \item{"list"}{Function returns a \code{list} object with elements
-#'       \code{est} and \code{se}.}
-#'     \item{"data.frame"}{Function returns a \code{data.frame} object with
-#'       columns \code{examinee_id}, \code{est} and \code{se}.}
-#'     \item{"tibble"}{If the \code{tibble} package is available, the function
-#'       returns a \code{tibble} object with columns \code{examinee_id},
-#'       \code{est} and \code{se}.}
-#'   }
+#'   value. Default is \code{1e-6}.
 #'
-#' @return \code{est} The estimated examinee abilities. If the response vector
-#'   for a subject contains all \code{NA}s, then \code{est} will be \code{NA} to
-#'   differentiate from cases where all answers are incorrect.
-#' @return \code{se} The standard errors of the ability estimates. For
-#'   \code{"sum_score"} method, all standard errors will be \code{NA}. For
-#'   Bayesian methods (like EAP, MAP or Owen's), this value is the square root
-#'   of the posterior variance.
+#'
+#' @param output_type A character string specifying the format of the output.
+#'   Options are:
+#'   \describe{
+#'     \item{"list"}{Returns a \code{list} containing \code{est} (ability
+#'       estimates) and \code{se} (standard errors).}
+#'     \item{"data.frame"}{Returns a \code{data.frame} with columns
+#'       \code{examinee_id}, \code{est}, and \code{se}.}
+#'     \item{"tibble"}{Returns a \code{tibble} (if the \code{tibble} package
+#'       is installed) with the same structure as \code{data.frame}.}
+#'   }
+#'   Default is \code{"list"}.
+#'
+#' @return A \code{list}, \code{data.frame}, or \code{tibble}, depending on
+#'   \code{output_type} argument, containing:
+#'   \describe{
+#'     \item{est}{Estimated abilities. \code{NA} is returned if all responses for an examinee are \code{NA}.}
+#'     \item{se}{Standard errors of the estimates. For \code{"sum_score"},
+#'     standard errors are \code{NA}. Bayesian methods (EAP, MAP or Owen's)
+#'     provide the square root of the posterior variance.}
+#'   }
 #'
 #'
 #' @author Emre Gonulates
 #' @export
 #'
 #' @references
-#' Owen, R. J. (1975). A Bayesian sequential procedure for quantal response in
-#' the context of adaptive mental testing. Journal of the American Statistical
-#' Association, 70(350), 351-356.
-#'
-#' Vale, C. D., & Weiss, D. J. (1977). A Rapid Item-Search Procedure for
-#' Bayesian Adaptive Testing. Research Report 77-4. Minneapolis, MN.
+#' - Baker, F. B., & Kim, S.-H. (2004). \emph{Item Response Theory: Parameter Estimation Techniques}. New York: CRC Press.
+#' - Bock, R. D., & Aitkin, M. (1981). Marginal maximum likelihood estimation of item parameters: Application of an EM algorithm. \emph{Psychometrika}, 46(4), 443–459.
+#' - Owen, R. J. (1975). A Bayesian sequential procedure for quantal response in the context of adaptive mental testing. \emph{Journal of the American Statistical Association}, 70(350), 351-356.
+#' - Samejima, F. (1997). Graded response model. In W. J. van der Linden & R. K. Hambleton (Eds.), \emph{Handbook of Modern Item Response Theory} (pp. 85-100). New York: Springer.
+#' - Vale, C. D., & Weiss, D. J. (1977). A rapid item-search procedure for Bayesian adaptive testing. Research Report 77-4. Minneapolis, MN: University of Minnesota.
 #'
 #' @examples
-#' ip <- generate_ip(n = 7)
+#' # Load or generate an example item pool
+#' ip <- generate_ip(n = 10)  # Generating an item pool with 10 items
+#'
+#' # Simulate responses for three examinees with true abilities from a normal distribution
 #' resp <- sim_resp(ip, theta = rnorm(3))
 #'
-#' ### EAP estimation ###
-#' est_ability(resp, ip)
-#' est_ability(resp, ip, number_of_quads = 81)
-#' # The default prior_dist is 'norm'. prior_pars = c(mean, sd)
-#' est_ability(resp, ip, prior_pars = c(0, 3))
-#' # prior_pars = c(min, max)
-#' est_ability(resp, ip, prior_dist = 'unif',  prior_pars = c(-3, 3))
-#' # prior_pars = c(df)
-#' est_ability(resp, ip, prior_dist = 't',  prior_pars = 3)
-#' # prior_pars = c(location, scale)
-#' est_ability(resp, ip, prior_dist = 'cauchy',  prior_pars = c(0, 1))
+#' ### Example 1: EAP Estimation ###
+#' # Basic EAP estimation with default parameters
+#' eap_results <- est_ability(resp, ip)
+#' print(eap_results)
 #'
+#' # Increasing the number of quadrature points for higher precision
+#' eap_results_high_precision <- est_ability(resp, ip, number_of_quads = 81)
+#' print(eap_results_high_precision)
 #'
-#' ### MAP estimation (Bayes Modal estimation) ###
-#' est_ability(resp, ip, method = "map")
-#' # The default prior_dist is 'norm'. prior_pars = c(mean, sd)
-#' est_ability(resp, ip, method = "map", prior_pars = c(0, 2))
+#' # Specifying a different normal prior: mean = 0, sd = 3
+#' eap_with_custom_prior <- est_ability(resp, ip, prior_pars = c(0, 3))
+#' print(eap_with_custom_prior)
 #'
+#' # Using a uniform prior distribution between -3 and 3
+#' eap_with_uniform_prior <- est_ability(
+#'   resp, ip, prior_dist = 'unif', prior_pars = c(-3, 3))
+#' print(eap_with_uniform_prior)
 #'
-#' ### Maximum Likelihood estimation ###
-#' est_ability(resp, ip, method = 'ml')
-#' est_ability(resp, ip, method = 'ml', tol = 1e-8)
-#' est_ability(resp = rep(1, length(ip)), ip, method = 'ml')
-#' est_ability(resp = rep(1, length(ip)), ip, method = 'ml',
-#'             theta_range = c(-3, 3))
+#' # Using a t-distribution with 3 degrees of freedom as the prior
+#' eap_with_t_prior <- est_ability(
+#'   resp, ip, prior_dist = 't', prior_pars = 3)
+#' print(eap_with_t_prior)
 #'
-#' ### Owen's Bayesian ability estimation ###
-#' est_ability(resp, ip, method = 'owen')
-#' est_ability(resp, ip, method = 'owen', prior_pars = c(0, 3))
+#' # Using a Cauchy prior with location = 0 and scale = 1
+#' eap_with_cauchy_prior <- est_ability(
+#'   resp, ip, prior_dist = 'cauchy', prior_pars = c(0, 1))
+#' print(eap_with_cauchy_prior)
 #'
+#' ### Example 2: MAP Estimation (Bayes Modal) ###
+#' # Basic MAP estimation using a normal prior with mean = 0 and sd = 2
+#' map_results <- est_ability(resp, ip, method = "map", prior_pars = c(0, 2))
+#' print(map_results)
 #'
+#' # Trying a different theta range for MAP estimation
+#' map_with_theta_range <- est_ability(
+#'   resp, ip, method = "map", theta_range = c(-3, 3))
+#' print(map_with_theta_range)
+#'
+#' ### Example 3: Maximum Likelihood Estimation (ML) ###
+#' # Basic ML estimation
+#' ml_results <- est_ability(resp, ip, method = "ml")
+#' print(ml_results)
+#'
+#' # Increasing the tolerance for higher precision in ML estimation
+#' ml_high_precision <- est_ability(resp, ip, method = "ml", tol = 1e-8)
+#' print(ml_high_precision)
+#'
+#' # Handling extreme cases where all responses are correct
+#' all_correct_resp <- matrix(1, nrow = 1, ncol = ncol(resp))
+#' ml_all_correct <- est_ability(all_correct_resp, ip, method = "ml")
+#' print(ml_all_correct)
+#'
+#' # Restricting the theta range in cases of extreme response patterns
+#' ml_with_restricted_range <- est_ability(
+#'   all_correct_resp, ip, method = "ml", theta_range = c(-3, 3))
+#' print(ml_with_restricted_range)
+#'
+#' ### Example 4: Owen's Bayesian Estimation ###
+#' # Basic Owen's Bayesian estimation with default prior parameters
+#' owen_results <- est_ability(resp, ip, method = "owen")
+#' print(owen_results)
+#'
+#' # Providing custom prior parameters: mean = 0, sd = 3
+#' owen_with_custom_prior <- est_ability(resp, ip, method = "owen", prior_pars = c(0, 3))
+#' print(owen_with_custom_prior)
+#'
+#' ### Example 5: Sum Score Method ###
+#' # Calculating the raw sum score without considering item parameters
+#' sum_score_results <- est_ability(resp, ip, method = "sum_score")
+#' print(sum_score_results)
+#'
+#' ### Example 6: Customizing Output Format ###
+#' # Returning results as a data.frame
+#' df_results <- est_ability(resp, ip, output_type = "data.frame")
+#' print(df_results)
+#'
+#' # Returning results as a tibble (if the tibble package is available)
+#' if (requireNamespace("tibble", quietly = TRUE)) {
+#'   tibble_results <- est_ability(resp, ip, output_type = "tibble")
+#'   print(tibble_results)
+#' }
+#'
+#' ### Example 7: Handling Missing Data ###
+#' # Simulating a response matrix with some missing values
+#' resp_with_nas <- resp
+#' resp_with_nas[1, 2] <- NA  # Introducing a missing response
+#' eap_with_nas <- est_ability(resp_with_nas, ip, method = "eap")
+#' print(eap_with_nas)
+#'
+#' ### Example 8: Batch Processing for Large Datasets ###
+#' # Simulating a larger set of responses for 100 examinees
+#' large_resp <- sim_resp(ip, theta = rnorm(100))
+#' large_ml_results <- est_ability(large_resp, ip, method = "ml")
+#' head(large_ml_results$est)  # Displaying only the first few estimates
+#'
+#' # EAP estimation for a large dataset with high precision
+#' large_eap_results <- est_ability(
+#'   large_resp, ip, method = "eap", number_of_quads = 81)
+#' head(large_eap_results$est)
 #'
 est_ability <- function(
     resp,

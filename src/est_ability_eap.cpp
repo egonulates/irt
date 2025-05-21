@@ -127,9 +127,9 @@ Rcpp::List est_ability_eap_single_examinee_cpp(
   double est;
   double se = 0;
   Rcpp::List output;
-  
+
   // Rcpp::List item_list = as<List>(ip.slot("item_list"));
-  Rcpp::List item_list = flatten_itempool_cpp(ip);	
+  Rcpp::List item_list = flatten_itempool_cpp(ip);
   unsigned int noItem = item_list.size();
 
   // Get Gauss-Hermite quadrature nodes and weights
@@ -283,10 +283,10 @@ Rcpp::List est_ability_eap_response_cpp(
       // Todo: Double check this default value
       prior = 1;
     }
-    temp = resp_lik_response_cpp(x[i], resp, ip);
+    // temp = resp_lik_response_cpp(x[i], resp, ip);
     fx_denominator[i] = resp_lik_response_cpp(x[i], resp, ip) * prior;
     //Rcout << "(est_ability_eap_response_cpp) -- " << temp << " -- " << prior << std::endl;
-    
+
     temp = gh_weights[i] * fx_denominator[i] * std::exp(pow(x[i], 2));
     numerator +=  temp * x[i];
     denominator +=  temp;
