@@ -1,6 +1,123 @@
 
 
 ###############################################################################@
+############################# .item_fit_sort_examinees #########################
+###############################################################################@
+#' Sort examinees into approximately equally sized n_groups
+#'
+#' @description
+#' This function separates examinees into approximately equally sized n_groups
+#' and returns a data frame with following columns:
+#' "examinee_id", "theta", "group"
+#' From Yen (1981): " To calculate Q1, examinees are rank ordered on the
+#' basis of their trait estimates and then divided into 10 cells with
+#' approximately equal numbers of examinees per cell." (p.246)
+#'
+#' @param resp_set A \code{\link{Response_set-class}} object containing the
+#'   item responses.
+#' @param theta An vector containing ability parameters.
+#' @param n_groups An integer representing the number of groups of examinees.
+#'
+#' @noRd
+.item_fit_sort_examinees <- function(resp_set, theta, n_groups) {
+  examinee_ids <- resp_set$examinee_id
+  df <- data.frame(examinee_id = examinee_ids, theta = theta)
+  df <- df[order(df$theta), ]
+  df$group <- as.integer(cut(1:nrow(df), breaks = n_groups))
+  # put into the original order
+  df <- df[match(examinee_ids, df$examinee_id), ]
+  return(df)
+}
+
+
+
+
+###############################################################################@
+############################# .item_fit_q1 #####################################
+###############################################################################@
+.item_fit_q1 <- function(
+    ip,
+    resp,
+    theta = NULL,
+    item_ids = NULL,
+    n_groups = NULL
+  ) {
+
+  # Convert resp into "Response_set" object
+  if (is(resp, "Response_set")) resp_set <- resp else
+    resp_set <- convert_to_resp_set(resp, ip)
+  # The length of theta and resp should be the same, else raise an error
+  if (!is.null(theta) && length(resp_set) != length(theta))
+    stop("The length of 'theta' and 'resp' should be the same.", call. = FALSE)
+
+  resp_matrix <- as.data.frame(as.matrix(resp_set, ip = ip))
+  resp_matrix <- cbind(data.frame(examinee_id = resp_set$examinee_id, theta = theta),
+                       resp_matrix)
+
+  # Check whether all items are dichotomous.
+  if (!all(ip$model %in% UNIDIM_DICHO_MODELS))
+    stop("item_fit(): For 'Q1' statistic, all items should be dichotomous items and ",
+         "item pool parameters should follow one of the following models: ",
+         paste0(paste0("\"", UNIDIM_DICHO_MODELS, "\""), collapse = ", "), ".",
+         call. = FALSE)
+
+  # The default number of groups is 10.
+  if (!is.null(n_groups)) n_groups <- as.integer(n_groups)
+  if (!is_single_value(n_groups, class = "integer")) n_groups <- 10
+  if (is.null(theta) || length(resp) != length(theta)) {
+    theta <- est_ability(resp = resp, ip = ip, method = "ml")$est
+  }
+
+  if (!is_atomic_vector(item_ids) || !all(item_ids %in% ip$resp_id)) {
+    item_ids <- ip$resp_id
+  }
+
+  # DeMars (2005, p.43): "The degrees of freedom are equal to the number of
+  # score intervals multiplied by one less than the number of categories. When
+  # there are only two categories (a dichotomous item), this fit index reduces
+  # to the index available from BILOG (Mislevy & Bock, 1990), with degrees of
+  # freedom equal to the number of score interval groups. Some other fit indices
+  # correct the degrees of freedom for the number of item parameters estimated.
+  # For example, Yen’s (1981) Q1 index, proposed for use with dichotomous items,
+  # involves subtracting 3 from the degrees of freedom for the three-parameter
+  # logistic model (3-PL), 2 for the two- parameter logistic model (2-PL), and 1
+  # for the one-parameter logistic model (1-PL). "
+  m <- sapply(PMODELS[ip$model[item_ids]], function(x) length(unlist(
+    sapply(x$parameters, function(t) t$se))))
+  result <- data.frame(item_id = item_ids, Q1 = NA, df = n_groups - m)
+
+  for (item_id in item_ids) {
+    # Select rows with non missing theta and item_id values
+    df <- resp_matrix[!is.na(resp_matrix[item_id]) & !is.na(resp_matrix[["theta"]]),
+                      c("examinee_id", "theta", item_id)]
+    names(df) <- c("examinee_id", "theta", "resp")
+
+    # From Yen (1981): " To calculate Q1, examinees are rank ordered on the
+    # basis of their trait estimates and then divided into 10 cells with
+    # approximately equal numbers of examinees per cell." (p.246)
+
+    # Put examinees into ability groups based on n_groups
+    df <- df[order(df$theta), ]
+    df$group <- as.integer(cut(1:nrow(df), breaks = n_groups))
+
+    # Calculate expected values
+    df$prob <- mean(x = ip[item_id], theta = df$theta)[, 1]
+    O <- stats::aggregate(x = df$resp, by = list(group = df$group), FUN = mean)
+    E <- stats::aggregate(x = df$prob, by = list(group = df$group), FUN = mean)
+    Ng <- stats::aggregate(x = df$resp, by = list(group = df$group), FUN = length)
+    q1 <- sum(Ng$x * (O$x - E$x)^2 / (E$x * (1 - E$x)))
+
+    result[result$item_id == item_id, "Q1"] <- q1
+  }
+
+  result$p_value <- stats::pchisq(result$Q1, df = result$df,
+                                  lower.tail = FALSE)
+  return(result)
+}
+
+
+
+###############################################################################@
 ############################# item_fit #########################################
 ###############################################################################@
 #' Calculate item-fit indices
@@ -15,7 +132,8 @@
 #'   \code{type = "Q1"} and \code{theta = NULL} or an invalid \code{theta}
 #'   vector provided, theta values will be estimated using item parameters and
 #'   responses. In order to speed up the function for large data sets, theta
-#'   values can be supplied.
+#'   values can be supplied. The order of the theta vector should be the same
+#'   of the rows of the response data.
 #' @param type The type of the item-fit index. Currently the following indices
 #'   are available:
 #'   \describe{
@@ -110,27 +228,11 @@
 item_fit <- function(ip, resp, theta = NULL, type = "Q1", item_id = NULL,
                      n_groups = NULL) {
 
-  # This function separates examinees into approximately equally sized n_groups
-  # and returns a data frame with following columns:
-  # "examinee_id", "theta", "group"
-  # From Yen (1981): " To calculate Q1, examinees are rank ordered on the
-  # basis of their trait estimates and then divided into 10 cells with
-  # approximately equal numbers of examinees per cell." (p.246)
-  sort_examinees <- function(resp_set, theta, n_groups) {
-    examinee_ids <- resp_set$examinee_id
-    df <- data.frame(examinee_id = examinee_ids, theta = theta)
-    df <- df[order(df$theta), ]
-    df$group <- as.integer(cut(1:nrow(df), breaks = n_groups))
-    # put into the original order
-    df <- df[match(examinee_ids, df$examinee_id), ]
-    return(df)
-  }
-
   # Convert resp into "Response_set" object
   if (is(resp, "Response_set")) resp_set <- resp else
     resp_set <- convert_to_resp_set(resp, ip)
 
-  if (type == "Q3") {
+  if (tolower(type) == "q3") {
     # Convert resp into "Response_set" object
     if (is.null(theta) || length(resp_set) != length(theta)) {
       theta <- est_ability(resp = resp_set, ip = ip, method = "ml")$est
@@ -140,59 +242,11 @@ item_fit <- function(ip, resp, theta = NULL, type = "Q1", item_id = NULL,
     d <- resp_matrix - expected_score
     return(stats::cor(d, use = "pairwise.complete.obs"))
     ############### Q1 #####################################################@###
-  } else if (type == "Q1") {
-    # Check whether all items are dichotomous.
-    if (!all(ip$model %in% UNIDIM_DICHO_MODELS))
-      stop("For 'Q1' statistic, all items should be dichotomous items and ",
-           "item pool parameters should follow one of the following models: ",
-           paste0(paste0("\"", UNIDIM_DICHO_MODELS, "\""), collapse = ", "), ".")
-
-    # The default number of groups is 10.
-    if (!is.null(n_groups)) n_groups <- as.integer(n_groups)
-    if (!is_single_value(n_groups, class = "integer")) n_groups <- 10
-    if (is.null(theta) || length(resp) != length(theta)) {
-      theta <- est_ability(resp = resp, ip = ip, method = "ml")$est
-    }
-
-    if (!is_atomic_vector(item_id) || !all(item_id %in% ip$resp_id)) {
-      item_id <- ip$resp_id
-    }
-    # From Yen (1981): " To calculate Q1, examinees are rank ordered on the
-    # basis of their trait estimates and then divided into 10 cells with
-    # approximately equal numbers of examinees per cell." (p.246)
-    df <- sort_examinees(resp_set = resp_set, theta = theta,
-                         n_groups = n_groups)
-    result <- rep(0, length(item_id))
-    for (g in sort(unique(df$group))) {
-      indices <- which(df$group == g)
-      temp_theta <- df$theta[indices]
-      temp_resp <- as.matrix(resp_set[indices], ip = ip)[, item_id,
-                                                         drop = FALSE]
-      na_indices <- is.na(temp_resp)
-      # Expected proportion of correct,
-      E <- prob(ip = ip[item_id], theta = temp_theta)
-      # Get the probabilities of correct responses
-      E <- sapply(E, function(x) x[, 2])
-      E <- matrix(as.vector(E), ncol = length(item_id),
-                  nrow = length(temp_theta), byrow = TRUE)
-
-      E[na_indices] <- NA
-      E <- colMeans(E, na.rm = TRUE)
-      # Observed proportion of correct
-      O <- colMeans(temp_resp, na.rm = TRUE)
-      # Number of examinees in each group
-      Ng <- colSums(!na_indices)
-      result <- result + Ng * (O - E)^2 / (E * (1 - E))
-    }
-    # Calculate m, the number of parameters estimated for each item
-    m <- sapply(PMODELS[ip$model], function(x) length(unlist(
-      sapply(x$parameters, function(t) t$se))))[ip$item_id %in% item_id]
-    result <- data.frame(item_id = item_id, Q1 = result, df = n_groups - m)
-    result$p_value <- stats::pchisq(result$Q1, df = result$df,
-                                    lower.tail = FALSE)
-    return(result)
+  } else if (tolower(type) == "q1") {
+    return(.item_fit_q1(ip = ip, resp = resp_set, theta = theta,
+                        item_id = item_id, n_groups = n_groups))
     ############### G2 #####################################################@###
-  } else if (type == "G2") {
+  } else if (tolower(type) == "g2") {
     # Check whether all items are dichotomous.
     if (!all(ip$model %in% c(UNIDIM_DICHO_MODELS, UNIDIM_POLY_MODELS)))
       stop("For 'G2' statistic, all items should follow one of the following ",
@@ -209,8 +263,8 @@ item_fit <- function(ip, resp, theta = NULL, type = "Q1", item_id = NULL,
     if (!is_atomic_vector(item_id) || !all(item_id %in% ip$resp_id)) {
       item_id <- ip$resp_id
     }
-    df <- sort_examinees(resp_set = resp_set, theta = theta,
-                         n_groups = n_groups)
+    df <- .item_fit_sort_examinees(resp_set = resp_set, theta = theta,
+                                   n_groups = n_groups)
     result <- rep(0, length(item_id))
 
     max_scores <- max_score(ip = ip[item_id], sum = FALSE)

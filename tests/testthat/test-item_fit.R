@@ -32,6 +32,44 @@ test_that("item_fit - Itempool", {
   expect_true(all(q1$df == (n_groups - num_of_pars)))
 
   # -------------------------------------------------------------------------- #
+  # The length of theta and the number of examinees should be the same, if not
+  # an error is raised.
+  ip <- generate_ip(model = "2PL", n = 10)
+  theta <- rnorm(100)
+  resp <- sim_resp(ip = ip, theta = theta, prop_missing = .3,
+                   output = "response_set")
+  expect_error(item_fit(ip = ip, resp = resp[-1, ], theta = theta, type = "Q1"),
+               regexp = "The length of 'theta' and 'resp' should be the same.")
+
+
+  # -------------------------------------------------------------------------- #
+  # Q1 with different IRT models (1pl, 2pl, 3pl, Rasch, 4pl)
+  n_items <- sample(15:25, 1)
+  ip <- generate_ip(model = sample(c("1PL", "2PL", "Rasch", "3PL", "4PL"),
+                                   size = n_items, replace = TRUE),
+                    n = n_items)
+  theta <- rnorm(100)
+  resp <- sim_resp(ip = ip, theta = theta, prop_missing = .3,
+                   output = "response_set")
+  q1 <- item_fit(ip = ip, resp = resp, theta = theta, type = "Q1",
+                 n_groups = 10)
+  # DeMars (2005, p.43): "The degrees of freedom are equal to the number of
+  # score intervals multiplied by one less than the number of categories. When
+  # there are only two categories (a dichotomous item), this fit index reduces
+  # to the index available from BILOG (Mislevy & Bock, 1990), with degrees of
+  # freedom equal to the number of score interval groups. Some other fit indices
+  # correct the degrees of freedom for the number of item parameters estimated.
+  # For example, Yen’s (1981) Q1 index, proposed for use with dichotomous items,
+  # involves subtracting 3 from the degrees of freedom for the three-parameter
+  # logistic model (3-PL), 2 for the two- parameter logistic model (2-PL), and 1
+  # for the one-parameter logistic model (1-PL). "
+  i <- sample(1:n_items, 1)
+  expect_true(all(q1$df[i] == 10 - switch(ip$model[i], `4PL` = 4, `3PL` = 3,
+                                          `2PL` = 2, Rasch = 1, `1PL` = 1)))
+
+
+
+  # -------------------------------------------------------------------------- #
   # Check when there are missing data
   ip <- generate_ip(model = "2PL", n = 10)
   theta <- rnorm(1000)
@@ -63,16 +101,32 @@ test_that("item_fit - Itempool", {
   resp_missing <- resp[!is.na(resp[, 1]), ]
   q1_all <- item_fit(ip = ip, resp = resp, theta = theta, type = "Q1",
                      item_id = NULL)
-  q1 <- item_fit(ip = ip, resp = resp_missing, theta = theta, type = "Q1",
-                 item_id = "Item_1")
+  # q1 <- item_fit(ip = ip, resp = resp_missing, theta = theta, type = "Q1",
+  #                item_id = "Item_1")
 
   # -------------------------------------------------------------------------- #
   # Q1 won't work with polytomous items
-  ip_poly <- generate_ip(model = "GRM")
+  n_items <- sample(10:20, 1)
+  ip_poly <- generate_ip(model = "GRM",
+                         n_categories = sample(3:7, n_items, TRUE), n = n_items)
   theta <- rnorm(100)
   resp <- sim_resp(ip = ip_poly, theta = theta)
   expect_error(item_fit(ip = ip_poly, resp = resp, theta = theta, type = "Q1"))
 
+  # -------------------------------------------------------------------------- #
+  # if 'item_id' are not specified but 'ip' is specified, Q1 will only be
+  # calculated for the item_id's in the 'ip'.
+  ip <- generate_ip(model = "2PL", n = 10)
+  theta <- rnorm(100)
+  resp <- sim_resp(ip = ip, theta = theta, prop_missing = .3,
+                   output = "matrix")
+  # Add two additional columns that are clearly not items
+  resp <- cbind(resp, misc1 = sample(100:200, nrow(resp)), misc2 = sample(100:200, nrow(resp)))
+  # Get a warning about the extra columns
+  expect_warning(rs <- response_set(resp, ip = ip),
+                 "The following columns are not in the item pool")
+  q1_all <- item_fit(ip = ip, resp = rs, theta = theta, type = "Q1",
+                     item_id = NULL)
 
   # # ------------------------------------------------------------------------ #
   # # Q1 will eliminate theta values that are NA.
