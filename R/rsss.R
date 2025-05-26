@@ -13,6 +13,12 @@
 #' @param scale_score A value (or vector of values) representing scale score(s).
 #' @param theta_range The limits of the scale score. The default is
 #'   \code{c(-5, 5)}.
+#' @param tolerance A numeric value representing the tolerance level for the
+#'   uniroot function. The default is \code{1e-6}. This value is used to
+#'   determine the convergence of the uniroot function. A smaller value will
+#'   result in a more accurate result, but will take longer to compute. The
+#'   default value is usually sufficient for most applications.
+#'
 #'
 #' @return A vector of raw or scale scores.
 #'
@@ -22,32 +28,75 @@
 #'
 #' @author Emre Gonulates
 #'
+#' @examples
+#' ### Example 1 ###
+#' ip <- generate_ip(model = sample(c("GPCM", "2PL"), 10, TRUE))
+#' sum_score <- sample(seq(0, max_score(ip)), 3)
+#' theta_score <- rnorm(4)
+#' # Convert raw score to scale score
+#' rsss(ip = ip, raw_score = sum_score)
+#'
+#'
+#'
+#'
 rsss <- function(ip, raw_score = NULL, scale_score = NULL,
-                 theta_range = c(-5, 5)) {
+                 theta_range = c(-5, 5), tolerance = 1e-6) {
   result <- NULL
   if (!is.null(raw_score)) {
     max_possible_score <- sum(ip$item_max_score)
     if (any(raw_score > max_possible_score) || any(raw_score < 0))
       stop(paste0("Raw score values cannot larger than the maximum possible ",
                   "raw score of ", max_possible_score, " or smaller than 0."))
+
+
     raw_score_to_scale_score <- Vectorize(function(y) {
-      uniroot(f = function(x) {sum(mean(ip, theta = x)) - y},
-              lower = sort(theta_range)[1], upper = sort(theta_range)[2])$root})
-    result <- tryCatch(
-      raw_score_to_scale_score(raw_score),
-      error = function(e) {
-        if (grepl(pattern = "values at end points not of opposite sign",
-                  e$message))
-          stop(paste0(
-            "\nScale score cannot be calculated for some raw scores. Please ",
-            "provide a wider 'theta_range' than c(", theta_range[1], " ,",
-            theta_range[2], "). \nOr, remove raw score(s): ",
-            paste0(c(switch(0 %in% raw_score, 0, NULL),
-                     switch(max_possible_score %in% raw_score,
-                            max_possible_score, NULL)), collapse = ", "), "."),
-               call. = FALSE)
-      }
-    )
+      tryCatch(
+        {
+          uniroot(f = function(x) {sum(mean(ip, theta = x)) - y},
+                  lower = sort(theta_range)[1],
+                  upper = sort(theta_range)[2],
+                  tol = tolerance)$root
+        },
+        error = function(e) {
+          # Check if it's the specific error we're looking for
+          if (grepl("f\\(\\) values at end points not of opposite sign", e$message)) {
+            return(NA)
+          } else {
+            # Re-throw other errors
+            stop(e)
+          }
+        }
+      )
+    })
+    result <- raw_score_to_scale_score(raw_score)
+
+    # Check if the result contains NA values
+    if (any(is.na(result))) {
+      warning(paste0(
+        "\nScale score cannot be calculated for some raw scores. Please ",
+        "provide a wider 'theta_range' than c(", theta_range[1], " ,",
+        theta_range[2], "). \nOr, remove raw score(s): ",
+        paste0(sort(unique(raw_score[is.na(result)])), collapse = ", "), "."))
+    }
+
+    # raw_score_to_scale_score <- Vectorize(function(y) {
+    #   uniroot(f = function(x) {sum(mean(ip, theta = x)) - y},
+    #           lower = sort(theta_range)[1], upper = sort(theta_range)[2])$root})
+    # result <- tryCatch(
+    #   raw_score_to_scale_score(raw_score),
+    #   error = function(e) {
+    #     if (grepl(pattern = "values at end points not of opposite sign",
+    #               e$message))
+    #       stop(paste0(
+    #         "\nScale score cannot be calculated for some raw scores. Please ",
+    #         "provide a wider 'theta_range' than c(", theta_range[1], " ,",
+    #         theta_range[2], "). \nOr, remove raw score(s): ",
+    #         paste0(c(switch(0 %in% raw_score, 0, NULL),
+    #                  switch(max_possible_score %in% raw_score,
+    #                         max_possible_score, NULL)), collapse = ", "), "."),
+    #            call. = FALSE)
+    #   }
+    # )
   } else if (!is.null(scale_score) && all(sapply(scale_score, is.numeric))) {
     scale_score_to_raw_score <- Vectorize(function(x) {
       sum(mean(ip, theta = x))

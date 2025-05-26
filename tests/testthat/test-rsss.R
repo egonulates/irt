@@ -8,8 +8,8 @@ test_that("rsss", {
   expect_error(rsss(ip = ip, raw_score = get_maximum_possible_score(ip) + 2))
   expect_error(rsss(ip = ip, raw_score = -1))
   # Error when a very small raw score presented
-  expect_error(rsss(ip = ip, raw_score = 0),
-               "Please provide a wider 'theta_range'")
+  expect_warning(rsss(ip = ip, raw_score = 0),
+                 "Please provide a wider 'theta_range'")
 
   # -------------------------------------------------------------------------- #
   # A simple 3PL item pool
